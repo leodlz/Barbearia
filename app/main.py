@@ -7,3 +7,9 @@ app = FastAPI()
 def inicio():
 
         return {'mensagem': 'API da barbearia funcionando'}
+
+@app.get('/status')
+
+def status():
+        
+                return {'status': 'online'}
