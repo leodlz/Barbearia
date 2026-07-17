@@ -1,7 +1,7 @@
 # Gerenciador de Barbearia
 
-API e interface web para administrar serviços, barbeiros, disponibilidade e o
-ciclo de vida de agendamentos de uma barbearia.
+API e interface web para administrar serviços, barbeiros, disponibilidade,
+clientes, lembretes e o ciclo de vida de agendamentos de uma barbearia.
 
 ## Funcionalidades
 
@@ -12,8 +12,10 @@ ciclo de vida de agendamentos de uma barbearia.
 - conflito por intervalo, barbeiro e duração do serviço;
 - cadastro de serviços com preço decimal e duração;
 - cadastro de barbeiros e associação muitos-para-muitos com serviços;
-- consulta de horários disponíveis;
-- interface de agendamento em `/web`;
+- acesso do cliente com CPF e senha;
+- histórico do cliente em "Meus agendamentos";
+- painel master para agenda, serviços, barbeiros e segurança;
+- lembretes por provedor simulado, SMS ou WhatsApp via Twilio;
 - documentação OpenAPI em `/docs`;
 - migrações Alembic e testes isolados com Pytest.
 
@@ -40,9 +42,9 @@ app/
 ├── schemas/        contratos Pydantic
 ├── services/       regras de negócio
 ├── static/         interface web
-└── main.py          composição da aplicação
-alembic/             migrações de banco
-tests/               testes automatizados isolados
+└── main.py         composição da aplicação
+alembic/            migrações de banco
+tests/              testes automatizados isolados
 ```
 
 ## Instalação no Windows
@@ -55,8 +57,7 @@ alembic upgrade head
 ```
 
 O comando `alembic upgrade head` cria um banco novo ou aplica somente as
-migrações que ainda faltam. Ele deve ser executado sempre que o projeto receber
-uma nova migração.
+migrações pendentes. Execute sempre que o projeto receber uma nova migração.
 
 ## Execução
 
@@ -64,12 +65,16 @@ uma nova migração.
 fastapi dev app/main.py
 ```
 
-- API: <http://127.0.0.1:8000>
+- Home: <http://127.0.0.1:8000>
+- Agendamento: <http://127.0.0.1:8000/agendar>
+- Acesso do cliente: <http://127.0.0.1:8000/acesso>
+- Meus agendamentos: <http://127.0.0.1:8000/meus-agendamentos>
+- Painel master: <http://127.0.0.1:8000/admin/login>
 - Swagger: <http://127.0.0.1:8000/docs>
-- interface: <http://127.0.0.1:8000/web>
+- Status da API: <http://127.0.0.1:8000/status>
 
-Antes de usar a interface, cadastre ao menos um serviço e um barbeiro pela
-documentação `/docs` e associe os dois.
+Antes de usar a agenda, cadastre ao menos um serviço e um barbeiro pelo painel
+master ou pela documentação `/docs`, e associe o barbeiro ao serviço.
 
 ## Testes
 
@@ -83,8 +88,8 @@ Os testes usam SQLite em memória e nunca acessam `barbearia.db`.
 
 | Método | Caminho | Finalidade |
 |---|---|---|
-| `POST` | `/agendamentos` | Criar agendamento |
-| `GET` | `/agendamentos` | Listar agendamentos |
+| `POST` | `/agendamentos` | Criar agendamento legado |
+| `GET` | `/agendamentos` | Listar agendamentos legado |
 | `GET` | `/agendamentos/{id}` | Consultar por ID |
 | `PATCH` | `/agendamentos/{id}/cancelar` | Cancelar |
 | `PATCH` | `/agendamentos/{id}/concluir` | Concluir |
@@ -95,6 +100,11 @@ Os testes usam SQLite em memória e nunca acessam `barbearia.db`.
 | `POST/GET` | `/barbeiros` | Criar ou listar barbeiros |
 | `GET` | `/barbeiros/{id}` | Consultar barbeiro |
 | `POST/DELETE` | `/barbeiros/{id}/servicos/{servico_id}` | Alterar associação |
+| `POST` | `/api/clientes/registro` | Registrar cliente |
+| `POST` | `/api/clientes/login` | Login do cliente |
+| `POST` | `/api/clientes/agendamentos` | Criar agendamento do cliente |
+| `GET` | `/api/clientes/me/agendamentos` | Histórico do cliente autenticado |
+| `POST` | `/api/admin/login` | Login master |
 
 Consulte `/docs` para parâmetros, exemplos e schemas completos.
 
@@ -119,8 +129,8 @@ Consulte `/docs` para parâmetros, exemplos e schemas completos.
 Defina `BARBEARIA_TIMEZONE` com um identificador IANA, como
 `America/Sao_Paulo`. As regras de agendamento, disponibilidade, dashboard e
 lembretes usam esse fuso mesmo que o servidor esteja configurado em outra
-região. O schema atual ainda persiste horários civis sem `tzinfo`, adequado para
-uma única unidade da barbearia.
+região. O schema atual persiste horários civis sem `tzinfo`, adequado para uma
+única unidade da barbearia.
 
 ## Banco de dados e migrações
 
@@ -135,15 +145,13 @@ alembic upgrade head
 
 Revise sempre o arquivo gerado antes de aplicar a migração.
 
-## Configuração e implantação
-
-### Acesso do cliente e lembretes
+## Configuração
 
 O cliente registra nome, telefone, CPF e senha em `/acesso`. Nos próximos
 acessos, usa CPF e senha. A senha é armazenada como hash `scrypt` com salt; o
 cookie assinado guarda somente o `cliente_id`.
 
-O link “Esqueci minha senha” envia um código de seis dígitos pelo canal de
+O link "Esqueci minha senha" envia um código de seis dígitos pelo canal de
 notificação configurado. O código é armazenado somente como hash, expira em 10
 minutos e é bloqueado após cinco erros. No provedor `simulado`, o código aparece
 na própria interface exclusivamente para desenvolvimento local.
@@ -189,8 +197,9 @@ Por padrão, a aplicação usa:
 DATABASE_URL=sqlite:///./barbearia.db
 ```
 
-Outro banco pode ser informado pela variável de ambiente `DATABASE_URL`. O
-repositório inclui um `Dockerfile`:
+Outro banco pode ser informado pela variável de ambiente `DATABASE_URL`.
+
+## Docker
 
 ```powershell
 docker build -t gerenciador-barbearia .
