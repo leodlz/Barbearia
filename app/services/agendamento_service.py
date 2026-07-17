@@ -10,6 +10,7 @@ from app.models.servico import Servico
 from app.schemas.agendamento import AgendamentoEntrada, StatusAgendamento
 from app.services.barbeiro_service import obter_barbeiro
 from app.services.servico_service import obter_servico
+from app.services.relogio import agora_local
 
 
 def listar_agendamentos(db: Session) -> list[Agendamento]:
@@ -140,7 +141,7 @@ def validar_catalogo(barbeiro: Barbeiro, servico: Servico) -> None:
 
 
 def _validar_horario_futuro(data: date, horario: time) -> None:
-    if datetime.combine(data, horario) <= datetime.now():
+    if datetime.combine(data, horario) <= agora_local():
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="O agendamento deve ser marcado para uma data e horário futuros.",
@@ -148,7 +149,7 @@ def _validar_horario_futuro(data: date, horario: time) -> None:
 
 
 def _validar_horario_decorrido(agendamento: Agendamento) -> None:
-    if datetime.combine(agendamento.data, agendamento.horario) > datetime.now():
+    if datetime.combine(agendamento.data, agendamento.horario) > agora_local():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Esta ação só pode ser realizada após o horário do agendamento.",

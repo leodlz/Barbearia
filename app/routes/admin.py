@@ -17,6 +17,7 @@ from app.schemas.admin import BarbeiroAdminEntrada, ServicoAdminEntrada, StatusE
 from app.schemas.barbeiro import BarbeiroSaida
 from app.schemas.servico import ServicoSaida
 from app.services import agendamento_service
+from app.services.relogio import hoje_local
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"], dependencies=[Depends(require_master)])
 STATIC = Path(__file__).parents[1] / "static"
@@ -24,7 +25,7 @@ STATIC = Path(__file__).parents[1] / "static"
 
 @router.get("/dashboard")
 def dashboard(db: Session = Depends(get_db)):
-    hoje = date.today()
+    hoje = hoje_local()
     return {"agendamentos_hoje": db.query(Agendamento).filter(Agendamento.data == hoje).count(), "proximos": db.query(Agendamento).filter(Agendamento.data >= hoje, Agendamento.status.in_(["agendado", "confirmado"])).count(), "confirmados": db.query(Agendamento).filter(Agendamento.status == "confirmado").count(), "cancelados": db.query(Agendamento).filter(Agendamento.status == "cancelado").count(), "barbeiros_ativos": db.query(Barbeiro).filter(Barbeiro.ativo.is_(True)).count(), "servicos_ativos": db.query(Servico).filter(Servico.ativo.is_(True)).count()}
 
 
@@ -111,7 +112,7 @@ def estado_barbeiro(barbeiro_id: int, acao: str, db: Session = Depends(get_db)):
     futuros=_futuros(db,barbeiro_id=barbeiro_id);item.ativo=acao=="ativar";db.commit();return {"ativo":item.ativo,"agendamentos_futuros":futuros}
 
 def _futuros(db: Session, barbeiro_id=None, servico_id=None):
-    q=db.query(Agendamento).filter(Agendamento.data>=date.today(),Agendamento.status.in_(["agendado","confirmado"]))
+    q=db.query(Agendamento).filter(Agendamento.data>=hoje_local(),Agendamento.status.in_(["agendado","confirmado"]))
     if barbeiro_id:q=q.filter(Agendamento.barbeiro_id==barbeiro_id)
     if servico_id:q=q.filter(Agendamento.servico_id==servico_id)
     return q.count()

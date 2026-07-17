@@ -7,6 +7,7 @@ from app.schemas.agendamento import StatusAgendamento
 from app.services.agendamento_service import validar_catalogo
 from app.services.barbeiro_service import obter_barbeiro
 from app.services.servico_service import obter_servico
+from app.services.relogio import agora_local
 
 
 ABERTURA = time(9)
@@ -65,7 +66,7 @@ def _calcular_horarios(
 
     horarios = []
     candidato = inicio_expediente
-    agora = datetime.now()
+    agora = agora_local()
 
     while candidato + timedelta(minutes=duracao_minutos) <= fim_expediente:
         fim_candidato = candidato + timedelta(minutes=duracao_minutos)

@@ -114,12 +114,13 @@ Consulte `/docs` para parâmetros, exemplos e schemas completos.
 - intervalo do MVP: 12:00 às 13:00;
 - novos inícios são oferecidos a cada 30 minutos.
 
-### Limitação de timezone
+### Fuso horário
 
-Datas e horários são armazenados sem fuso horário e comparados com o relógio
-local do servidor. Em uma implantação destinada a várias regiões, o próximo
-passo é persistir instantes em UTC e configurar explicitamente o fuso da
-barbearia.
+Defina `BARBEARIA_TIMEZONE` com um identificador IANA, como
+`America/Sao_Paulo`. As regras de agendamento, disponibilidade, dashboard e
+lembretes usam esse fuso mesmo que o servidor esteja configurado em outra
+região. O schema atual ainda persiste horários civis sem `tzinfo`, adequado para
+uma única unidade da barbearia.
 
 ## Banco de dados e migrações
 
