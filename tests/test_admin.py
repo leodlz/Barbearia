@@ -14,6 +14,29 @@ def test_login_master_e_permissoes(client: TestClient) -> None:
     assert client.get('/api/admin/dashboard').status_code == 403
 
 
+def test_master_troca_senha_com_validacoes(client: TestClient) -> None:
+    endpoint = '/api/admin/senha'
+    assert client.put(endpoint, json={
+        'senha_atual': 'incorreta',
+        'nova_senha': 'nova-senha-segura',
+        'confirmar_nova_senha': 'nova-senha-segura',
+    }).status_code == 400
+    assert client.put(endpoint, json={
+        'senha_atual': 'senha-admin',
+        'nova_senha': 'nova-senha-segura',
+        'confirmar_nova_senha': 'outra-senha-segura',
+    }).status_code == 422
+    assert client.put(endpoint, json={
+        'senha_atual': 'senha-admin',
+        'nova_senha': 'nova-senha-segura',
+        'confirmar_nova_senha': 'nova-senha-segura',
+    }).status_code == 204
+    assert client.get('/api/admin/me').status_code == 200
+    client.post('/api/admin/logout')
+    assert client.post('/api/admin/login', json={'usuario': 'Admin', 'senha': 'senha-admin'}).status_code == 401
+    assert client.post('/api/admin/login', json={'usuario': 'Admin', 'senha': 'nova-senha-segura'}).status_code == 200
+
+
 def test_master_gerencia_servico_e_barbeiro(client: TestClient) -> None:
     servico=client.post('/servicos',json={'nome':'Corte','preco':'40.00','duracao_minutos':30}).json()
     editado=client.put(f"/api/admin/servicos/{servico['id']}",json={'nome':'Corte premium','descricao':'Completo','preco':'55.00','duracao_minutos':45})
