@@ -1,1 +1,59 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0c"><title>Entrar — Barbearia</title><link rel="stylesheet" href="/static/styles.css"></head><body><a class="skip-link" href="#conteudo">Ir para o conteúdo</a><main class="page-shell access-shell" id="conteudo"><section class="hero"><p class="eyebrow">Área do cliente</p><h1>Seu horário, do seu jeito.</h1><p class="subtitle">Entre para agendar. Seu CPF é usado como usuário e não será exibido publicamente.</p></section><section class="booking-card" aria-label="Acesso do cliente"><div class="auth-tabs" role="tablist" aria-label="Opções de acesso"><button id="tab-login" type="button" class="auth-tab active" role="tab" aria-selected="true">Entrar</button><button id="tab-register" type="button" class="auth-tab" role="tab" aria-selected="false">Registrar-se</button></div><form id="login-form"><label>CPF<input id="login-cpf" inputmode="numeric" autocomplete="username" required></label><label class="full-field">Senha<input id="login-senha" type="password" autocomplete="current-password" required></label><button>Entrar</button><button id="forgot-button" type="button" class="link-button">Esqueci minha senha</button></form><form id="register-form" class="hidden"><label>Nome completo<input id="nome" autocomplete="name" minlength="3" required></label><label class="full-field">Telefone<input id="telefone" inputmode="tel" autocomplete="tel" required></label><label class="full-field">CPF<input id="registro-cpf" inputmode="numeric" required></label><label class="full-field">Senha<input id="registro-senha" type="password" minlength="8" maxlength="128" required><small>Use pelo menos 8 caracteres.</small></label><button>Criar conta</button></form><form id="recovery-form" class="hidden"><label>CPF<input id="recovery-cpf" inputmode="numeric" required></label><div id="recovery-confirm" class="hidden"><label class="full-field">Código recebido<input id="recovery-code" inputmode="numeric" pattern="[0-9]{6}"></label><label class="full-field">Nova senha<input id="recovery-password" type="password" minlength="8"></label><label class="full-field">Confirmar senha<input id="recovery-password-confirm" type="password" minlength="8"></label></div><button id="recovery-submit">Enviar código</button><button id="recovery-back" type="button" class="link-button">Voltar ao login</button></form><p id="feedback" class="feedback" role="alert" aria-live="polite"></p></section></main><script src="/static/ui.js" defer></script><script src="/static/acesso.js" defer></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b0c">
+  <title>Entrar — Barbearia</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <main class="page-shell access-shell" id="conteudo">
+    <section class="hero">
+      <p class="eyebrow">Área do cliente</p>
+      <h1>Entre para reservar seu horário.</h1>
+      <p class="subtitle">Seu CPF funciona como usuário. Usamos seus dados apenas para identificar seus agendamentos e enviar avisos importantes.</p>
+    </section>
+
+    <section class="booking-card access-card" aria-label="Acesso do cliente">
+      <div class="auth-tabs" role="tablist" aria-label="Opções de acesso">
+        <button id="tab-login" type="button" class="auth-tab active" role="tab" aria-selected="true">Entrar</button>
+        <button id="tab-register" type="button" class="auth-tab" role="tab" aria-selected="false">Registrar-se</button>
+      </div>
+
+      <form id="login-form" novalidate>
+        <label>CPF<input id="login-cpf" inputmode="numeric" autocomplete="username" required aria-describedby="login-cpf-help"></label>
+        <small id="login-cpf-help">Digite apenas os números ou o CPF formatado.</small>
+        <label class="full-field password-field">Senha<input id="login-senha" type="password" autocomplete="current-password" required><button type="button" data-toggle-password="#login-senha" aria-label="Mostrar senha">Mostrar</button></label>
+        <button>Entrar</button>
+        <button id="forgot-button" type="button" class="link-button">Esqueci minha senha</button>
+      </form>
+
+      <form id="register-form" class="hidden" novalidate>
+        <label>Nome completo<input id="nome" autocomplete="name" minlength="3" required></label>
+        <label class="full-field">Telefone<input id="telefone" inputmode="tel" autocomplete="tel" required></label>
+        <label class="full-field">CPF<input id="registro-cpf" inputmode="numeric" autocomplete="username" required></label>
+        <label class="full-field password-field">Senha<input id="registro-senha" type="password" minlength="8" maxlength="128" autocomplete="new-password" required><button type="button" data-toggle-password="#registro-senha" aria-label="Mostrar senha">Mostrar</button></label>
+        <small>Use pelo menos 8 caracteres.</small>
+        <button>Criar conta</button>
+      </form>
+
+      <form id="recovery-form" class="hidden" novalidate>
+        <label>CPF<input id="recovery-cpf" inputmode="numeric" required></label>
+        <div id="recovery-confirm" class="hidden">
+          <label class="full-field">Código recebido<input id="recovery-code" inputmode="numeric" pattern="[0-9]{6}"></label>
+          <label class="full-field">Nova senha<input id="recovery-password" type="password" minlength="8"></label>
+          <label class="full-field">Confirmar senha<input id="recovery-password-confirm" type="password" minlength="8"></label>
+        </div>
+        <button id="recovery-submit">Enviar código</button>
+        <button id="recovery-back" type="button" class="link-button">Voltar ao login</button>
+      </form>
+
+      <p id="feedback" class="feedback" role="alert" aria-live="polite"></p>
+    </section>
+  </main>
+  <script src="/static/ui.js" defer></script>
+  <script src="/static/acesso.js" defer></script>
+</body>
+</html>

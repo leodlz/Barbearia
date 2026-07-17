@@ -1,1 +1,64 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0b0b0c"><title>Administração — Barbearia</title><link rel="stylesheet" href="/static/styles.css"></head><body><a class="skip-link" href="#conteudo">Ir para o conteúdo</a><main class="page-shell access-shell" id="conteudo"><section class="hero"><p class="eyebrow">Administração</p><h1>Gestão da barbearia.</h1><p class="subtitle">Acesso reservado para a equipe responsável pela operação.</p></section><section class="booking-card" aria-labelledby="admin-login-title"><div class="card-heading"><span aria-hidden="true">BB</span><div><p class="eyebrow">Acesso seguro</p><h2 id="admin-login-title">Entrar como master</h2></div></div><form id="admin-login"><label>Usuário<input id="usuario" autocomplete="username" required></label><label class="full-field">Senha<input id="senha" type="password" autocomplete="current-password" required></label><button>Entrar</button><p id="feedback" class="feedback" role="alert" aria-live="polite"></p></form></section></main><script>document.querySelector('#admin-login').onsubmit=async e=>{e.preventDefault();const botao=e.currentTarget.querySelector('button');botao.disabled=true;const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({usuario:usuario.value.trim(),senha:senha.value})});if(r.ok)location.href='/admin';else{feedback.textContent=(await r.json()).detail;feedback.className='feedback error';botao.disabled=false;}};</script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b0c">
+  <title>Administração — Barbearia</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <main class="page-shell access-shell admin-login-shell" id="conteudo">
+    <section class="hero">
+      <p class="eyebrow">Administração</p>
+      <h1>Gestão segura da barbearia.</h1>
+      <p class="subtitle">Acesso reservado para acompanhar agenda, serviços, barbeiros e configurações operacionais.</p>
+    </section>
+
+    <section class="booking-card access-card" aria-labelledby="admin-login-title">
+      <div class="card-heading">
+        <span aria-hidden="true">BB</span>
+        <div>
+          <p class="eyebrow">Acesso master</p>
+          <h2 id="admin-login-title">Entrar no painel</h2>
+        </div>
+      </div>
+      <form id="admin-login" novalidate>
+        <label>Usuário<input id="usuario" autocomplete="username" required></label>
+        <label class="full-field password-field">Senha<input id="senha" type="password" autocomplete="current-password" required><button type="button" id="toggle-password" aria-label="Mostrar senha">Mostrar</button></label>
+        <button>Entrar</button>
+        <p id="feedback" class="feedback" role="alert" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+  <script src="/static/ui.js" defer></script>
+  <script defer>
+    document.querySelector('#toggle-password').onclick = () => {
+      const input = document.querySelector('#senha');
+      const toggle = document.querySelector('#toggle-password');
+      const visible = input.type === 'text';
+      input.type = visible ? 'password' : 'text';
+      toggle.textContent = visible ? 'Mostrar' : 'Ocultar';
+      toggle.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
+    };
+    document.querySelector('#admin-login').onsubmit = async event => {
+      event.preventDefault();
+      if (!event.currentTarget.reportValidity()) return;
+      const botao = event.currentTarget.querySelector('button:not([type])');
+      botao.disabled = true;
+      botao.textContent = 'Entrando...';
+      const response = await fetch('/api/admin/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({usuario: document.querySelector('#usuario').value.trim(), senha: document.querySelector('#senha').value})});
+      if (response.ok) location.href = '/admin';
+      else {
+        const body = await response.json().catch(() => ({}));
+        feedback.textContent = body.detail || 'Não foi possível entrar.';
+        feedback.className = 'feedback error';
+        if (window.showToast) window.showToast(feedback.textContent, 'error');
+        botao.disabled = false;
+        botao.textContent = 'Entrar';
+      }
+    };
+  </script>
+</body>
+</html>

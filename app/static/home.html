@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b0b0c">
+  <title>Barbearia — Cortes, barba e agendamento online</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <nav class="top-nav" aria-label="Navegação principal">
+    <a class="nav-brand" href="/"><span class="brand-mark" aria-hidden="true">BB</span><span>Barbearia</span></a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" aria-label="Abrir menu">☰</button>
+    <div class="nav-links" id="site-navigation">
+      <a href="/" aria-current="page">Início</a>
+      <a href="#servicos">Serviços</a>
+      <a href="#barbeiros">Barbeiros</a>
+      <a href="/acesso">Entrar</a>
+      <a class="nav-cta" href="/agendar">Agendar agora</a>
+    </div>
+  </nav>
+
+  <main id="conteudo">
+    <section class="home-hero">
+      <div class="home-hero__content">
+        <p class="eyebrow">Barbearia premium</p>
+        <h1>Visual alinhado, horário marcado e atendimento sem pressa.</h1>
+        <p class="subtitle">Agende corte, barba ou combo com poucos cliques. Você escolhe o serviço, o barbeiro e o melhor horário disponível.</p>
+        <div class="hero-actions">
+          <a class="button" href="/agendar">Agendar agora</a>
+          <a class="button secondary-button" href="#servicos">Ver serviços</a>
+        </div>
+      </div>
+      <div class="hero-showcase" aria-label="Resumo da experiência">
+        <div class="barber-scene" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <dl>
+          <div><dt>Atendimento</dt><dd>com hora marcada</dd></div>
+          <div><dt>Lembrete</dt><dd>24h antes do horário</dd></div>
+          <div><dt>Histórico</dt><dd>sempre disponível</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="home-section" id="servicos" aria-labelledby="servicos-title">
+      <div class="section-heading">
+        <p class="eyebrow">Catálogo</p>
+        <h2 id="servicos-title">Serviços em destaque</h2>
+      </div>
+      <div id="home-services" class="feature-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="home-section" id="barbeiros" aria-labelledby="barbeiros-title">
+      <div class="section-heading">
+        <p class="eyebrow">Equipe</p>
+        <h2 id="barbeiros-title">Barbeiros disponíveis</h2>
+      </div>
+      <div id="home-barbers" class="feature-grid barber-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="home-section process-section" aria-labelledby="process-title">
+      <div class="section-heading">
+        <p class="eyebrow">Como funciona</p>
+        <h2 id="process-title">Do clique à cadeira</h2>
+      </div>
+      <div class="process-grid">
+        <article><span>01</span><h3>Escolha o serviço</h3><p>Veja duração e preço antes de continuar.</p></article>
+        <article><span>02</span><h3>Selecione o barbeiro</h3><p>O sistema mostra apenas profissionais compatíveis.</p></article>
+        <article><span>03</span><h3>Confirme o horário</h3><p>Você recebe a confirmação e pode acompanhar tudo depois.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <strong>Barbearia</strong>
+    <span>Agendamento online com conforto, organização e lembretes automáticos.</span>
+    <a href="/admin/login">Área master</a>
+  </footer>
+
+  <script src="/static/ui.js" defer></script>
+  <script src="/static/home.js" defer></script>
+</body>
+</html>

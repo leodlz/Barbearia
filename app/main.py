@@ -31,9 +31,9 @@ app.include_router(admin_router)
 app.include_router(notificacoes_router)
 
 
-@app.get("/")
-def inicio() -> dict[str, str]:
-    return {"mensagem": "API da barbearia funcionando"}
+@app.get("/", include_in_schema=False)
+def inicio() -> FileResponse:
+    return FileResponse(STATIC_DIR / "home.html")
 
 
 @app.get("/status")

@@ -9,11 +9,21 @@ const h = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&': '&amp;
 const money = value => Number(value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 const requestJson = (method, data) => ({method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
 
+function setFeedback(message, type = '') {
+  feedback.textContent = message;
+  feedback.className = `feedback ${type}`;
+  if (message && window.showToast) window.showToast(message, type || 'success');
+}
+
+function loading(message = 'Carregando informações...') {
+  content.innerHTML = `<article class="empty-state"><div class="spinner" aria-hidden="true"></div><p>${h(message)}</p></article>`;
+}
+
 async function api(url, options, withMeta = false) {
   const response = await fetch(url, options);
   if (response.status === 401 || response.status === 403) {
     location.href = '/admin/login';
-    throw Error('Sem permissão');
+    throw Error('Você não tem permissão para acessar esta área.');
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw Error(body.detail || 'Não foi possível concluir.');
@@ -21,14 +31,12 @@ async function api(url, options, withMeta = false) {
 }
 
 async function executar(action, successMessage) {
-  feedback.className = 'feedback';
+  setFeedback('');
   try {
     await action();
-    feedback.textContent = successMessage || feedback.textContent;
-    if (successMessage) feedback.classList.add('success');
+    if (successMessage) setFeedback(successMessage, 'success');
   } catch (error) {
-    feedback.textContent = error.message;
-    feedback.classList.add('error');
+    setFeedback(error.message, 'error');
   }
 }
 
@@ -38,13 +46,31 @@ async function carregarCatalogo() {
 
 async function dashboard() {
   title.textContent = 'Dashboard';
+  loading();
   const data = await api('/api/admin/dashboard');
-  content.innerHTML = `<div class="summary-grid">${Object.entries(data).map(([key, value]) => `<article><strong>${value}</strong><span>${h(key.replaceAll('_', ' '))}</span></article>`).join('')}</div>`;
+  const labels = {
+    agendamentos_hoje: 'agendamentos hoje',
+    proximos_atendimentos: 'próximos atendimentos',
+    servicos_ativos: 'serviços ativos',
+    barbeiros_ativos: 'barbeiros ativos',
+    cancelamentos: 'cancelamentos',
+  };
+  content.innerHTML = `<div class="summary-grid">${Object.entries(data).map(([key, value]) => `<article><strong>${value}</strong><span>${h(labels[key] || key.replaceAll('_', ' '))}</span></article>`).join('')}</div>
+    <section class="surface-card admin-welcome">
+      <p class="eyebrow">Ações rápidas</p>
+      <h2>Operação do dia</h2>
+      <div class="action-group">
+        <button data-view-shortcut="agenda">Ver agenda</button>
+        <button data-view-shortcut="servicos" class="secondary-button">Gerenciar serviços</button>
+        <button data-view-shortcut="barbeiros" class="secondary-button">Gerenciar barbeiros</button>
+      </div>
+    </section>`;
 }
 
 async function agenda(query = '') {
   title.textContent = 'Agendamentos';
   agendaQuery = query;
+  loading('Carregando agenda...');
   await carregarCatalogo();
   const separador = query ? '&' : '?';
   const {body: itens, response} = await api(`/api/admin/agendamentos${query}${separador}por_pagina=20`, undefined, true);
@@ -60,54 +86,137 @@ async function agenda(query = '') {
     <label>Ordenar por<select name="ordenar"><option value="data">Data</option><option value="horario">Horário</option><option value="cliente">Cliente</option><option value="status">Status</option></select></label>
     <label>Direção<select name="direcao"><option value="asc">Crescente</option><option value="desc">Decrescente</option></select></label>
     <button type="submit">Filtrar</button><button type="reset" class="secondary-button">Limpar</button>
-  </form><section id="client-link-panel"></section><p>${total} registro(s) · página ${paginaAtual} de ${totalPaginas}.</p><div class="admin-list">${itens.map(item => `<article><strong>${h(item.data)} ${h(item.horario.slice(0, 5))} — ${h(item.cliente)}</strong><span>${h(item.telefone)} · ${h(item.servico)} · ${h(item.barbeiro)} · ${money(item.preco)}</span>${item.cliente_id === null ? `<button data-link-client="${item.id}">Vincular cliente</button>` : ''}<select aria-label="Status do agendamento" data-status="${item.id}">${['agendado', 'confirmado', 'cancelado', 'concluido', 'faltou'].map(status => `<option ${status === item.status ? 'selected' : ''}>${status}</option>`).join('')}</select></article>`).join('') || '<p>Nenhum agendamento encontrado.</p>'}</div><nav class="pagination"><button data-page="${paginaAtual - 1}" ${paginaAtual <= 1 ? 'disabled' : ''}>Anterior</button><button data-page="${paginaAtual + 1}" ${paginaAtual >= totalPaginas ? 'disabled' : ''}>Próxima</button></nav>`;
+  </form>
+  <section id="client-link-panel"></section>
+  <p class="result-count">${total} registro(s) · página ${paginaAtual} de ${totalPaginas}.</p>
+  <div class="admin-list agenda-list">${itens.map(item => `<article>
+    <div>
+      <span class="status-badge status-${h(item.status)}">${h(item.status)}</span>
+      <strong>${h(item.data)} às ${h(item.horario.slice(0, 5))}</strong>
+      <span>${h(item.cliente)} · ${h(item.telefone)}</span>
+      <small>${h(item.servico)} · ${h(item.barbeiro)} · ${money(item.preco)}</small>
+    </div>
+    <div class="action-group">
+      ${item.cliente_id === null ? `<button data-link-client="${item.id}" class="secondary-button">Vincular cliente</button>` : ''}
+      <select aria-label="Status do agendamento" data-status="${item.id}">${['agendado', 'confirmado', 'cancelado', 'concluido', 'faltou'].map(status => `<option ${status === item.status ? 'selected' : ''}>${status}</option>`).join('')}</select>
+    </div>
+  </article>`).join('') || '<article class="empty-state"><h3>Nenhum agendamento encontrado</h3><p>Ajuste os filtros ou aguarde novos horários.</p></article>'}</div>
+  <nav class="pagination"><button data-page="${paginaAtual - 1}" ${paginaAtual <= 1 ? 'disabled' : ''}>Anterior</button><button data-page="${paginaAtual + 1}" ${paginaAtual >= totalPaginas ? 'disabled' : ''}>Próxima</button></nav>`;
   const atuais = new URLSearchParams(query.replace(/^\?/, ''));
-  for (const [key, value] of atuais) if (content.querySelector(`[name="${key}"]`)) content.querySelector(`[name="${key}"]`).value = value;
+  for (const [key, value] of atuais) {
+    const field = content.querySelector(`[name="${key}"]`);
+    if (field) field.value = value;
+  }
 }
 
 function abrirVinculo(agendamentoId) {
-  document.querySelector('#client-link-panel').innerHTML = `<article class="settings-card"><strong>Vincular agendamento #${agendamentoId}</strong><form id="client-search-form" data-appointment-id="${agendamentoId}"><label>Nome ou telefone do cliente<input id="client-search" minlength="2" required></label><button>Buscar cliente</button><button type="button" class="secondary-button" data-close-link>Cancelar</button></form><div id="client-search-results"></div></article>`;
+  document.querySelector('#client-link-panel').innerHTML = `<article class="settings-card">
+    <strong>Vincular agendamento #${agendamentoId}</strong>
+    <form id="client-search-form" data-appointment-id="${agendamentoId}">
+      <label>Nome ou telefone do cliente<input id="client-search" minlength="2" required></label>
+      <button>Buscar cliente</button>
+      <button type="button" class="secondary-button" data-close-link>Cancelar</button>
+    </form>
+    <div id="client-search-results"></div>
+  </article>`;
   document.querySelector('#client-search').focus();
 }
 
 function formularioServico(item = {}) {
-  return `<form id="service-form" class="inline-form" data-id="${item.id || ''}"><input id="sn" placeholder="Nome" value="${h(item.nome)}" required><input id="sd" placeholder="Descrição" value="${h(item.descricao)}"><input id="sp" type="number" step=".01" min=".01" placeholder="Preço" value="${h(item.preco)}" required><input id="st" type="number" min="1" max="480" placeholder="Minutos" value="${h(item.duracao_minutos)}" required><button>${item.id ? 'Atualizar' : 'Cadastrar'}</button>${item.id ? '<button type="button" class="secondary-button" data-cancel-edit>Cancelar</button>' : ''}</form>`;
+  return `<form id="service-form" class="inline-form management-form" data-id="${item.id || ''}">
+    <label>Nome<input id="sn" value="${h(item.nome)}" required></label>
+    <label>Descrição<input id="sd" value="${h(item.descricao)}"></label>
+    <label>Preço<input id="sp" type="number" step=".01" min=".01" value="${h(item.preco)}" required></label>
+    <label>Minutos<input id="st" type="number" min="1" max="480" value="${h(item.duracao_minutos)}" required></label>
+    <button>${item.id ? 'Atualizar' : 'Cadastrar'}</button>
+    ${item.id ? '<button type="button" class="secondary-button" data-cancel-edit>Cancelar</button>' : ''}
+  </form>`;
 }
 
 async function telaServicos(editId) {
   title.textContent = 'Serviços';
+  loading('Carregando serviços...');
   servicos = await api('/api/admin/servicos');
   const editado = servicos.find(item => item.id === Number(editId));
-  content.innerHTML = `${formularioServico(editado)}<div class="admin-list">${servicos.map(item => `<article><strong>${h(item.nome)} <span class="status-badge">${item.ativo ? 'Ativo' : 'Inativo'}</span></strong><span>${money(item.preco)} · ${item.duracao_minutos} min</span><div class="action-group"><button data-edit-service="${item.id}">Editar</button><button data-service="${item.id}" data-action="${item.ativo ? 'desativar' : 'ativar'}">${item.ativo ? 'Desativar' : 'Ativar'}</button></div></article>`).join('')}</div>`;
+  content.innerHTML = `${formularioServico(editado)}
+    <div class="section-tools"><p class="result-count">${servicos.length} serviço(s) cadastrado(s).</p></div>
+    <div class="admin-list management-list">${servicos.map(item => `<article>
+      <div>
+        <span class="status-badge ${item.ativo ? 'status-confirmado' : 'status-cancelado'}">${item.ativo ? 'Ativo' : 'Inativo'}</span>
+        <strong>${h(item.nome)}</strong>
+        <span>${h(item.descricao || 'Sem descrição')}</span>
+        <small>${money(item.preco)} · ${item.duracao_minutos} min</small>
+      </div>
+      <div class="action-group">
+        <button data-edit-service="${item.id}">Editar</button>
+        <button data-service="${item.id}" data-action="${item.ativo ? 'desativar' : 'ativar'}" class="${item.ativo ? 'danger-button' : 'secondary-button'}">${item.ativo ? 'Desativar' : 'Ativar'}</button>
+      </div>
+    </article>`).join('') || '<article class="empty-state"><h3>Nenhum serviço cadastrado</h3><p>Crie o primeiro serviço para liberar agendamentos.</p></article>'}</div>`;
 }
 
 function formularioBarbeiro(item = {}) {
   const ids = new Set((item.servicos || []).map(servico => servico.id));
   const quantidade = ids.size;
   const resumo = quantidade ? `${quantidade} serviço${quantidade > 1 ? 's' : ''} selecionado${quantidade > 1 ? 's' : ''}` : 'Selecionar serviços';
-  return `<form id="barber-form" class="inline-form" data-id="${item.id || ''}"><input id="bn" placeholder="Nome" value="${h(item.nome)}" required><input id="bd" placeholder="Descrição" value="${h(item.descricao)}"><label class="service-picker-label">Serviços<details class="service-picker"><summary><span data-service-summary>${resumo}</span><span class="picker-chevron" aria-hidden="true">⌄</span></summary><div class="service-options">${servicos.map(servico => `<label class="service-option"><input type="checkbox" value="${servico.id}" data-service-option ${ids.has(servico.id) ? 'checked' : ''}><span>${h(servico.nome)}</span></label>`).join('') || '<p class="service-empty">Nenhum serviço cadastrado.</p>'}</div></details></label><button>${item.id ? 'Atualizar' : 'Cadastrar'}</button>${item.id ? '<button type="button" class="secondary-button" data-cancel-edit>Cancelar</button>' : ''}</form>`;
+  return `<form id="barber-form" class="inline-form management-form" data-id="${item.id || ''}">
+    <label>Nome<input id="bn" value="${h(item.nome)}" required></label>
+    <label>Descrição<input id="bd" value="${h(item.descricao)}"></label>
+    <label class="service-picker-label">Serviços
+      <details class="service-picker">
+        <summary><span data-service-summary>${resumo}</span><span class="picker-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="service-options">${servicos.map(servico => `<label class="service-option"><input type="checkbox" value="${servico.id}" data-service-option ${ids.has(servico.id) ? 'checked' : ''}><span>${h(servico.nome)}</span></label>`).join('') || '<p class="service-empty">Nenhum serviço cadastrado.</p>'}</div>
+      </details>
+    </label>
+    <button>${item.id ? 'Atualizar' : 'Cadastrar'}</button>
+    ${item.id ? '<button type="button" class="secondary-button" data-cancel-edit>Cancelar</button>' : ''}
+  </form>`;
 }
 
 async function telaBarbeiros(editId) {
   title.textContent = 'Barbeiros';
+  loading('Carregando barbeiros...');
   await carregarCatalogo();
   const editado = barbeiros.find(item => item.id === Number(editId));
-  content.innerHTML = `${formularioBarbeiro(editado)}<div class="admin-list">${barbeiros.map(item => `<article><strong>${h(item.nome)} <span class="status-badge">${item.ativo ? 'Ativo' : 'Inativo'}</span></strong><span>${item.servicos.map(servico => h(servico.nome)).join(', ') || 'Sem serviços'}</span><div class="action-group"><button data-edit-barber="${item.id}">Editar serviços</button><button data-barber="${item.id}" data-action="${item.ativo ? 'desativar' : 'ativar'}">${item.ativo ? 'Desativar' : 'Ativar'}</button></div></article>`).join('')}</div>`;
+  content.innerHTML = `${formularioBarbeiro(editado)}
+    <div class="admin-list management-list barber-management">${barbeiros.map(item => `<article>
+      <div class="barber-row">
+        <div class="avatar" aria-hidden="true">${h(item.nome).slice(0, 2).toUpperCase()}</div>
+        <div>
+          <span class="status-badge ${item.ativo ? 'status-confirmado' : 'status-cancelado'}">${item.ativo ? 'Ativo' : 'Inativo'}</span>
+          <strong>${h(item.nome)}</strong>
+          <span>${item.servicos.map(servico => h(servico.nome)).join(' · ') || 'Sem serviços associados'}</span>
+        </div>
+      </div>
+      <div class="action-group">
+        <button data-edit-barber="${item.id}">Editar</button>
+        <button data-barber="${item.id}" data-action="${item.ativo ? 'desativar' : 'ativar'}" class="${item.ativo ? 'danger-button' : 'secondary-button'}">${item.ativo ? 'Desativar' : 'Ativar'}</button>
+      </div>
+    </article>`).join('') || '<article class="empty-state"><h3>Nenhum barbeiro cadastrado</h3><p>Cadastre barbeiros e associe serviços.</p></article>'}</div>`;
 }
 
 async function seguranca() {
   title.textContent = 'Segurança';
+  loading();
   const master = await api('/api/admin/me');
-  content.innerHTML = `<article class="settings-card"><p>Usuário conectado: <strong>${h(master.usuario)}</strong></p><form id="password-form"><label>Senha atual<input id="current-password" type="password" required autocomplete="current-password"></label><label>Nova senha<input id="new-password" type="password" minlength="8" required autocomplete="new-password"></label><label>Confirmar nova senha<input id="confirm-password" type="password" minlength="8" required autocomplete="new-password"></label><button>Alterar senha</button></form></article>`;
+  content.innerHTML = `<article class="settings-card">
+    <p>Usuário conectado: <strong>${h(master.usuario)}</strong></p>
+    <form id="password-form">
+      <label>Senha atual<input id="current-password" type="password" required autocomplete="current-password"></label>
+      <label>Nova senha<input id="new-password" type="password" minlength="8" required autocomplete="new-password"></label>
+      <label>Confirmar nova senha<input id="confirm-password" type="password" minlength="8" required autocomplete="new-password"></label>
+      <button>Alterar senha</button>
+    </form>
+  </article>`;
 }
 
 const views = {dashboard, agenda, servicos: telaServicos, barbeiros: telaBarbeiros, seguranca};
+
 document.querySelector('.admin-nav').addEventListener('click', event => {
   const view = event.target.dataset.view;
   if (view) executar(() => views[view]());
 });
 
-content.addEventListener('change', event => {
+content.addEventListener('change', async event => {
   if (event.target.matches('[data-service-option]')) {
     const picker = event.target.closest('.service-picker');
     const quantidade = picker.querySelectorAll('[data-service-option]:checked').length;
@@ -115,11 +224,27 @@ content.addEventListener('change', event => {
     return;
   }
   if (!event.target.dataset.status) return;
-  executar(() => api(`/api/admin/agendamentos/${event.target.dataset.status}/status`, requestJson('PATCH', {status: event.target.value})), 'Status atualizado.');
+  const status = event.target.value;
+  if (['cancelado', 'faltou'].includes(status)) {
+    const ok = await window.confirmDialog({
+      title: 'Alterar status',
+      message: `Confirmar mudança para ${status}? Esta informação aparecerá no histórico.`,
+      confirmText: 'Alterar status',
+      cancelText: 'Voltar',
+      danger: true,
+    });
+    if (!ok) {
+      await agenda(agendaQuery);
+      return;
+    }
+  }
+  executar(() => api(`/api/admin/agendamentos/${event.target.dataset.status}/status`, requestJson('PATCH', {status})), 'Status atualizado.');
 });
 
-content.addEventListener('click', event => {
-  const target = event.target;
+content.addEventListener('click', async event => {
+  const target = event.target.closest('button');
+  if (!target) return;
+  if (target.dataset.viewShortcut) executar(() => views[target.dataset.viewShortcut]());
   if (target.dataset.editService) telaServicos(target.dataset.editService);
   if (target.dataset.editBarber) telaBarbeiros(target.dataset.editBarber);
   if (target.dataset.linkClient) abrirVinculo(target.dataset.linkClient);
@@ -134,16 +259,24 @@ content.addEventListener('click', event => {
     await agenda();
   }, 'Cliente vinculado ao agendamento.');
   if (target.hasAttribute('data-cancel-edit')) title.textContent === 'Serviços' ? telaServicos() : telaBarbeiros();
-  if (target.dataset.service) executar(async () => {
-    const result = await api(`/api/admin/servicos/${target.dataset.service}/${target.dataset.action}`, {method: 'PATCH'});
-    await telaServicos();
-    feedback.textContent = `Serviço atualizado. ${result.agendamentos_futuros} agendamento(s) futuro(s) preservado(s).`;
-  });
-  if (target.dataset.barber) executar(async () => {
-    const result = await api(`/api/admin/barbeiros/${target.dataset.barber}/${target.dataset.action}`, {method: 'PATCH'});
-    await telaBarbeiros();
-    feedback.textContent = `Barbeiro atualizado. ${result.agendamentos_futuros} agendamento(s) para revisão.`;
-  });
+  if (target.dataset.service) {
+    const ok = target.dataset.action === 'desativar' ? await window.confirmDialog({title: 'Desativar serviço', message: 'O serviço ficará indisponível para novos agendamentos. Registros históricos serão preservados.', confirmText: 'Desativar', cancelText: 'Voltar', danger: true}) : true;
+    if (!ok) return;
+    executar(async () => {
+      const result = await api(`/api/admin/servicos/${target.dataset.service}/${target.dataset.action}`, {method: 'PATCH'});
+      await telaServicos();
+      setFeedback(`Serviço atualizado. ${result.agendamentos_futuros} agendamento(s) futuro(s) preservado(s).`, 'success');
+    });
+  }
+  if (target.dataset.barber) {
+    const ok = target.dataset.action === 'desativar' ? await window.confirmDialog({title: 'Desativar barbeiro', message: 'O barbeiro deixará de aparecer para novos horários. Agendamentos futuros podem exigir revisão.', confirmText: 'Desativar', cancelText: 'Voltar', danger: true}) : true;
+    if (!ok) return;
+    executar(async () => {
+      const result = await api(`/api/admin/barbeiros/${target.dataset.barber}/${target.dataset.action}`, {method: 'PATCH'});
+      await telaBarbeiros();
+      setFeedback(`Barbeiro atualizado. ${result.agendamentos_futuros} agendamento(s) para revisão.`, 'success');
+    });
+  }
 });
 
 content.addEventListener('reset', event => {
