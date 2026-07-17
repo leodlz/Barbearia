@@ -44,6 +44,7 @@ def criar_agendamento(
         data=dados.data,
         horario=dados.horario,
         cliente_id=cliente_id,
+        preco_no_agendamento=servico.preco,
     )
     db.add(agendamento)
     _salvar(db, agendamento)
@@ -80,6 +81,17 @@ def registrar_falta(db: Session, agendamento_id: int) -> Agendamento:
     return agendamento
 
 
+def alterar_status(db: Session, agendamento_id: int, novo_status: str) -> Agendamento:
+    agendamento = obter_agendamento(db, agendamento_id)
+    permitidos = {"agendado": {"confirmado", "cancelado", "concluido", "faltou"}, "confirmado": {"cancelado", "concluido", "faltou"}}
+    if novo_status not in permitidos.get(agendamento.status, set()):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Transição de status inválida.")
+    if novo_status == "cancelado": return cancelar_agendamento(db, agendamento_id)
+    if novo_status == "concluido": return concluir_agendamento(db, agendamento_id)
+    if novo_status == "faltou": return registrar_falta(db, agendamento_id)
+    agendamento.status = novo_status; _salvar(db, agendamento); return agendamento
+
+
 def _validar_conflito(
     db: Session,
     dados: AgendamentoEntrada,
@@ -88,7 +100,7 @@ def _validar_conflito(
     agendamentos_ativos = db.query(Agendamento).filter(
         Agendamento.barbeiro_id == dados.barbeiro_id,
         Agendamento.data == dados.data,
-        Agendamento.status == StatusAgendamento.AGENDADO.value,
+        Agendamento.status.in_([StatusAgendamento.AGENDADO.value, StatusAgendamento.CONFIRMADO.value]),
     ).all()
 
     novo_inicio = datetime.combine(dados.data, dados.horario)
@@ -147,7 +159,7 @@ def _validar_status_agendado(
     agendamento: Agendamento,
     novo_estado: str,
 ) -> None:
-    if agendamento.status != StatusAgendamento.AGENDADO.value:
+    if agendamento.status not in (StatusAgendamento.AGENDADO.value, StatusAgendamento.CONFIRMADO.value):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(

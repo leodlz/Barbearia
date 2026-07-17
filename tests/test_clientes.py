@@ -41,6 +41,7 @@ def test_agendamento_exige_sessao_e_cria_lembrete(client: TestClient, session_fa
     servico=client.post('/servicos',json={'nome':'Corte','preco':'40.00','duracao_minutos':30}).json()
     barbeiro=client.post('/barbeiros',json={'nome':'Carlos'}).json()
     client.post(f"/barbeiros/{barbeiro['id']}/servicos/{servico['id']}")
+    client.post('/api/admin/logout')
     payload={'barbeiro_id':barbeiro['id'],'servico_id':servico['id'],'data':(date.today()+timedelta(days=2)).isoformat(),'horario':'10:00:00'}
     assert client.post('/api/clientes/agendamentos',json=payload).status_code == 401
     client.post('/api/clientes/registro',json=DADOS)

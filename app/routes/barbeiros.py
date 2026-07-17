@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.schemas.barbeiro import BarbeiroEntrada, BarbeiroSaida
 from app.services import barbeiro_service
+from app.dependencies.auth import require_master
+from app.models.usuario_master import UsuarioMaster
 
 
 router = APIRouter(prefix="/barbeiros", tags=["Barbeiros"])
@@ -14,7 +16,7 @@ def listar_barbeiros(
     somente_ativos: bool = False,
     db: Session = Depends(get_db),
 ):
-    return barbeiro_service.listar_barbeiros(db, somente_ativos)
+    return barbeiro_service.listar_barbeiros(db, True)
 
 
 @router.get("/{barbeiro_id}", response_model=BarbeiroSaida)
@@ -29,6 +31,7 @@ def buscar_barbeiro(barbeiro_id: int, db: Session = Depends(get_db)):
 )
 def criar_barbeiro(
     barbeiro: BarbeiroEntrada,
+    _: UsuarioMaster = Depends(require_master),
     db: Session = Depends(get_db),
 ):
     return barbeiro_service.criar_barbeiro(db, barbeiro)
@@ -41,6 +44,7 @@ def criar_barbeiro(
 def associar_servico(
     barbeiro_id: int,
     servico_id: int,
+    _: UsuarioMaster = Depends(require_master),
     db: Session = Depends(get_db),
 ):
     return barbeiro_service.associar_servico(db, barbeiro_id, servico_id)
@@ -53,6 +57,7 @@ def associar_servico(
 def remover_servico(
     barbeiro_id: int,
     servico_id: int,
+    _: UsuarioMaster = Depends(require_master),
     db: Session = Depends(get_db),
 ) -> Response:
     barbeiro_service.remover_servico(db, barbeiro_id, servico_id)

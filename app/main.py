@@ -7,6 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.routes.agendamentos import router as agendamentos_router
+from app.routes.admin_auth import router as admin_auth_router
+from app.routes.admin import router as admin_router
 from app.routes.barbeiros import router as barbeiros_router
 from app.routes.clientes import router as clientes_router
 from app.routes.disponibilidade import router as disponibilidade_router
@@ -23,6 +25,8 @@ app.include_router(barbeiros_router)
 app.include_router(servicos_router)
 app.include_router(disponibilidade_router)
 app.include_router(clientes_router)
+app.include_router(admin_auth_router)
+app.include_router(admin_router)
 
 
 @app.get("/")

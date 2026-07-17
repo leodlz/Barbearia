@@ -1,4 +1,5 @@
-from datetime import date, time
+from datetime import date, datetime, time
+from decimal import Decimal
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -12,6 +13,7 @@ class StatusAgendamento(str, Enum):
     CANCELADO = "cancelado"
     CONCLUIDO = "concluido"
     FALTOU = "faltou"
+    CONFIRMADO = "confirmado"
 
 
 class AgendamentoEntrada(BaseModel):
@@ -41,6 +43,8 @@ class AgendamentoSaida(BaseModel):
     data: date
     horario: time
     status: StatusAgendamento
+    preco_no_agendamento: Decimal
+    criado_em: datetime
     barbeiro: BarbeiroResumo
     servico: ServicoSaida
 

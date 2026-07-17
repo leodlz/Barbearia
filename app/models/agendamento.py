@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Date, ForeignKey, Integer, String, Time
+from datetime import datetime
+from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, Numeric, String, Time
 from sqlalchemy.orm import relationship
 
 from app.database.connection import Base
@@ -23,6 +24,10 @@ class Agendamento(Base):
     horario = Column(Time, nullable=False)
 
     status = Column(String, nullable=False, default="agendado")
+
+    preco_no_agendamento = Column(Numeric(10, 2), nullable=False)
+
+    criado_em = Column(DateTime, nullable=False, default=datetime.now)
 
     barbeiro = relationship("Barbeiro", lazy="joined")
 

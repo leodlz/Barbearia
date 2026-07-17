@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -22,3 +23,5 @@ class ServicoSaida(BaseModel):
     preco: Decimal
     duracao_minutos: int
     ativo: bool
+    criado_em: datetime
+    atualizado_em: datetime

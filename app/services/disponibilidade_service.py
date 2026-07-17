@@ -60,7 +60,7 @@ def _calcular_horarios(
     ocupados = db.query(Agendamento).filter(
         Agendamento.barbeiro_id == barbeiro_id,
         Agendamento.data == data_escolhida,
-        Agendamento.status == StatusAgendamento.AGENDADO.value,
+        Agendamento.status.in_([StatusAgendamento.AGENDADO.value, StatusAgendamento.CONFIRMADO.value]),
     ).all()
 
     horarios = []

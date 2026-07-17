@@ -5,7 +5,9 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
+from app.dependencies.auth import require_cliente
 from app.models.cliente import Cliente
+from app.models.agendamento import Agendamento
 from app.schemas.agendamento import AgendamentoClienteEntrada, AgendamentoEntrada, AgendamentoSaida
 from app.schemas.cliente import ClienteLogin, ClienteRegistro, ClienteSaida
 from app.services import agendamento_service, cliente_service, notificacao_service
@@ -49,9 +51,28 @@ def me(request: Request, db: Session = Depends(get_db)):
 def sair(request: Request): request.session.clear()
 
 @router.post("/api/clientes/agendamentos", response_model=AgendamentoSaida, status_code=201)
-def criar(dados: AgendamentoClienteEntrada, request: Request, db: Session = Depends(get_db)):
-    cliente = cliente_da_sessao(request, db)
+def criar(dados: AgendamentoClienteEntrada, cliente: Cliente = Depends(require_cliente), db: Session = Depends(get_db)):
     entrada = AgendamentoEntrada(cliente=cliente.nome, **dados.model_dump())
     agendamento = agendamento_service.criar_agendamento(db, entrada, cliente.id)
     notificacao_service.agendar_lembrete(db, agendamento)
     return agendamento
+
+@router.get("/meus-agendamentos", include_in_schema=False)
+def meus_agendamentos(_: Cliente = Depends(require_cliente)):
+    return FileResponse(STATIC / "meus-agendamentos.html")
+
+@router.get("/api/clientes/me/agendamentos", response_model=list[AgendamentoSaida])
+def listar_meus(cliente: Cliente = Depends(require_cliente), db: Session = Depends(get_db)):
+    return db.query(Agendamento).filter(Agendamento.cliente_id == cliente.id).order_by(Agendamento.data.desc(), Agendamento.horario.desc()).all()
+
+@router.get("/api/clientes/me/agendamentos/{agendamento_id}", response_model=AgendamentoSaida)
+def detalhe_meu(agendamento_id: int, cliente: Cliente = Depends(require_cliente), db: Session = Depends(get_db)):
+    agendamento = db.query(Agendamento).filter(Agendamento.id == agendamento_id, Agendamento.cliente_id == cliente.id).first()
+    if not agendamento: raise HTTPException(status.HTTP_404_NOT_FOUND, "Agendamento não encontrado.")
+    return agendamento
+
+@router.patch("/api/clientes/me/agendamentos/{agendamento_id}/cancelar", response_model=AgendamentoSaida)
+def cancelar_meu(agendamento_id: int, cliente: Cliente = Depends(require_cliente), db: Session = Depends(get_db)):
+    agendamento = db.query(Agendamento).filter(Agendamento.id == agendamento_id, Agendamento.cliente_id == cliente.id).first()
+    if not agendamento: raise HTTPException(status.HTTP_404_NOT_FOUND, "Agendamento não encontrado.")
+    return agendamento_service.cancelar_agendamento(db, agendamento.id)

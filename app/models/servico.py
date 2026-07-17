@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, Integer, Numeric, String
+from datetime import datetime
+from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 
 from app.database.connection import Base
@@ -14,6 +15,8 @@ class Servico(Base):
     preco = Column(Numeric(10, 2), nullable=False)
     duracao_minutos = Column(Integer, nullable=False)
     ativo = Column(Boolean, nullable=False, default=True)
+    criado_em = Column(DateTime, nullable=False, default=datetime.now)
+    atualizado_em = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 
     barbeiros = relationship(
         "Barbeiro",

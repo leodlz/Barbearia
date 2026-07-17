@@ -194,6 +194,7 @@ def test_conclui_agendamento_decorrido(
             **catalogo,
             data=date.today() - timedelta(days=1),
             horario=time(9),
+            preco_no_agendamento="45.00",
         )
         db.add(agendamento)
         db.commit()
@@ -216,6 +217,7 @@ def test_registra_falta_em_agendamento_decorrido(
             **catalogo,
             data=date.today() - timedelta(days=1),
             horario=time(9),
+            preco_no_agendamento="45.00",
         )
         db.add(agendamento)
         db.commit()
