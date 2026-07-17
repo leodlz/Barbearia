@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from fastapi.testclient import TestClient
 
-DADOS={"nome":"Leonardo Luz","telefone":"(48) 99999-9999","cpf":"529.982.247-25","senha":"senha-segura"}
+from test_clientes import DADOS
 
 
 def test_login_master_e_permissoes(client: TestClient) -> None:

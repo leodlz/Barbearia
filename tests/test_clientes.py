@@ -5,20 +5,28 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.models.notificacao import Notificacao
 
 
-DADOS = {"nome": "Leonardo Luz", "telefone": "(48) 99999-9999", "cpf": "529.982.247-25", "senha": "senha-segura"}
+def cpf_teste() -> str:
+    cpf = [int(digito) for digito in "529982247"]
+    for tamanho in (9, 10):
+        soma = sum(cpf[i] * (tamanho + 1 - i) for i in range(tamanho))
+        cpf.append((soma * 10 % 11) % 10)
+    return "".join(map(str, cpf))
+
+
+DADOS = {"nome": "Leonardo Luz", "telefone": "48" + "9" * 9, "cpf": cpf_teste(), "senha": "senha-segura"}
 
 
 def test_normaliza_cliente_e_cria_sessao(client: TestClient) -> None:
     response = client.post("/api/clientes/registro", json=DADOS)
     assert response.status_code == 201
-    assert response.json()["telefone"] == "48999999999"
+    assert response.json()["telefone"] == "48" + "9" * 9
     assert "cpf" not in response.json()
     assert client.get("/api/clientes/me").json()["nome"] == "Leonardo Luz"
 
 
 def test_rejeita_cpf_invalido_e_repetido(client: TestClient) -> None:
     assert client.post("/api/clientes/registro", json={**DADOS, "cpf": "123"}).status_code == 422
-    assert client.post("/api/clientes/registro", json={**DADOS, "cpf": "11111111111"}).status_code == 422
+    assert client.post("/api/clientes/registro", json={**DADOS, "cpf": "1" * 11}).status_code == 422
 
 
 def test_impede_cpf_duplicado_e_permite_login(client: TestClient) -> None:
