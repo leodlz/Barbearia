@@ -17,3 +17,7 @@ class BarbeiroAdminEntrada(BaseModel):
 
 class StatusEntrada(BaseModel):
     status: str
+
+
+class VincularClienteEntrada(BaseModel):
+    cliente_id: int = Field(gt=0)

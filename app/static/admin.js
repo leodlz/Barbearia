@@ -3,12 +3,13 @@ const feedback = document.querySelector('#admin-feedback');
 const title = document.querySelector('#view-title');
 let servicos = [];
 let barbeiros = [];
+let agendaQuery = '';
 
 const h = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[char]));
 const money = value => Number(value).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
 const requestJson = (method, data) => ({method, headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)});
 
-async function api(url, options) {
+async function api(url, options, withMeta = false) {
   const response = await fetch(url, options);
   if (response.status === 401 || response.status === 403) {
     location.href = '/admin/login';
@@ -16,7 +17,7 @@ async function api(url, options) {
   }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw Error(body.detail || 'Não foi possível concluir.');
-  return body;
+  return withMeta ? {body, response} : body;
 }
 
 async function executar(action, successMessage) {
@@ -43,16 +44,30 @@ async function dashboard() {
 
 async function agenda(query = '') {
   title.textContent = 'Agendamentos';
+  agendaQuery = query;
   await carregarCatalogo();
-  const itens = await api(`/api/admin/agendamentos${query}`);
+  const separador = query ? '&' : '?';
+  const {body: itens, response} = await api(`/api/admin/agendamentos${query}${separador}por_pagina=20`, undefined, true);
+  const total = Number(response.headers.get('X-Total-Count') || itens.length);
+  const paginaAtual = Number(response.headers.get('X-Page') || 1);
+  const totalPaginas = Math.max(1, Math.ceil(total / 20));
   content.innerHTML = `<form id="agenda-filters" class="filter-form">
     <label>Data<input name="data" type="date"></label>
     <label>Barbeiro<select name="barbeiro_id"><option value="">Todos</option>${barbeiros.map(item => `<option value="${item.id}">${h(item.nome)}</option>`).join('')}</select></label>
     <label>Serviço<select name="servico_id"><option value="">Todos</option>${servicos.map(item => `<option value="${item.id}">${h(item.nome)}</option>`).join('')}</select></label>
     <label>Status<select name="status"><option value="">Todos</option>${['agendado', 'confirmado', 'cancelado', 'concluido', 'faltou'].map(status => `<option>${status}</option>`).join('')}</select></label>
     <label>Cliente ou telefone<input name="busca" placeholder="Buscar"></label>
+    <label>Ordenar por<select name="ordenar"><option value="data">Data</option><option value="horario">Horário</option><option value="cliente">Cliente</option><option value="status">Status</option></select></label>
+    <label>Direção<select name="direcao"><option value="asc">Crescente</option><option value="desc">Decrescente</option></select></label>
     <button type="submit">Filtrar</button><button type="reset" class="secondary-button">Limpar</button>
-  </form><p>${itens.length} registro(s) encontrado(s).</p><div class="admin-list">${itens.map(item => `<article><strong>${h(item.data)} ${h(item.horario.slice(0, 5))} — ${h(item.cliente)}</strong><span>${h(item.telefone)} · ${h(item.servico)} · ${h(item.barbeiro)} · ${money(item.preco)}</span><select aria-label="Status do agendamento" data-status="${item.id}">${['agendado', 'confirmado', 'cancelado', 'concluido', 'faltou'].map(status => `<option ${status === item.status ? 'selected' : ''}>${status}</option>`).join('')}</select></article>`).join('') || '<p>Nenhum agendamento encontrado.</p>'}</div>`;
+  </form><section id="client-link-panel"></section><p>${total} registro(s) · página ${paginaAtual} de ${totalPaginas}.</p><div class="admin-list">${itens.map(item => `<article><strong>${h(item.data)} ${h(item.horario.slice(0, 5))} — ${h(item.cliente)}</strong><span>${h(item.telefone)} · ${h(item.servico)} · ${h(item.barbeiro)} · ${money(item.preco)}</span>${item.cliente_id === null ? `<button data-link-client="${item.id}">Vincular cliente</button>` : ''}<select aria-label="Status do agendamento" data-status="${item.id}">${['agendado', 'confirmado', 'cancelado', 'concluido', 'faltou'].map(status => `<option ${status === item.status ? 'selected' : ''}>${status}</option>`).join('')}</select></article>`).join('') || '<p>Nenhum agendamento encontrado.</p>'}</div><nav class="pagination"><button data-page="${paginaAtual - 1}" ${paginaAtual <= 1 ? 'disabled' : ''}>Anterior</button><button data-page="${paginaAtual + 1}" ${paginaAtual >= totalPaginas ? 'disabled' : ''}>Próxima</button></nav>`;
+  const atuais = new URLSearchParams(query.replace(/^\?/, ''));
+  for (const [key, value] of atuais) if (content.querySelector(`[name="${key}"]`)) content.querySelector(`[name="${key}"]`).value = value;
+}
+
+function abrirVinculo(agendamentoId) {
+  document.querySelector('#client-link-panel').innerHTML = `<article class="settings-card"><strong>Vincular agendamento #${agendamentoId}</strong><form id="client-search-form" data-appointment-id="${agendamentoId}"><label>Nome ou telefone do cliente<input id="client-search" minlength="2" required></label><button>Buscar cliente</button><button type="button" class="secondary-button" data-close-link>Cancelar</button></form><div id="client-search-results"></div></article>`;
+  document.querySelector('#client-search').focus();
 }
 
 function formularioServico(item = {}) {
@@ -99,6 +114,17 @@ content.addEventListener('click', event => {
   const target = event.target;
   if (target.dataset.editService) telaServicos(target.dataset.editService);
   if (target.dataset.editBarber) telaBarbeiros(target.dataset.editBarber);
+  if (target.dataset.linkClient) abrirVinculo(target.dataset.linkClient);
+  if (target.dataset.page) {
+    const params = new URLSearchParams(agendaQuery.replace(/^\?/, ''));
+    params.set('pagina', target.dataset.page);
+    executar(() => agenda(`?${params}`));
+  }
+  if (target.hasAttribute('data-close-link')) document.querySelector('#client-link-panel').innerHTML = '';
+  if (target.dataset.clientChoice) executar(async () => {
+    await api(`/api/admin/agendamentos/${target.dataset.appointmentId}/cliente`, requestJson('PUT', {cliente_id: Number(target.dataset.clientChoice)}));
+    await agenda();
+  }, 'Cliente vinculado ao agendamento.');
   if (target.hasAttribute('data-cancel-edit')) title.textContent === 'Serviços' ? telaServicos() : telaBarbeiros();
   if (target.dataset.service) executar(async () => {
     const result = await api(`/api/admin/servicos/${target.dataset.service}/${target.dataset.action}`, {method: 'PATCH'});
@@ -123,6 +149,10 @@ content.addEventListener('submit', event => {
     for (const [key, value] of [...params]) if (!value) params.delete(key);
     executar(() => agenda(params.size ? `?${params}` : ''));
   }
+  if (event.target.id === 'client-search-form') executar(async () => {
+    const encontrados = await api(`/api/admin/clientes?busca=${encodeURIComponent(document.querySelector('#client-search').value)}`);
+    document.querySelector('#client-search-results').innerHTML = encontrados.map(cliente => `<button type="button" class="secondary-button client-choice" data-client-choice="${cliente.id}" data-appointment-id="${event.target.dataset.appointmentId}">${h(cliente.nome)} · ${h(cliente.telefone)}</button>`).join('') || '<p>Nenhum cliente encontrado.</p>';
+  });
   if (event.target.id === 'service-form') executar(async () => {
     const data = {nome: document.querySelector('#sn').value, descricao: document.querySelector('#sd').value || null, preco: document.querySelector('#sp').value, duracao_minutos: Number(document.querySelector('#st').value)};
     const id = event.target.dataset.id;

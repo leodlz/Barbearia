@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import FileResponse
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from app.models.barbeiro import Barbeiro
 from app.models.cliente import Cliente
 from app.models.servico import Servico
 from app.models.usuario_master import UsuarioMaster
-from app.schemas.admin import BarbeiroAdminEntrada, ServicoAdminEntrada, StatusEntrada
+from app.schemas.admin import BarbeiroAdminEntrada, ServicoAdminEntrada, StatusEntrada, VincularClienteEntrada
 from app.schemas.barbeiro import BarbeiroSaida
 from app.schemas.servico import ServicoSaida
 from app.services import agendamento_service
@@ -29,14 +29,47 @@ def dashboard(db: Session = Depends(get_db)):
 
 
 @router.get("/agendamentos")
-def agendamentos(data: date | None = None, barbeiro_id: int | None = None, servico_id: int | None = None, status_filtro: str | None = Query(None, alias="status"), busca: str | None = None, db: Session = Depends(get_db)):
+def agendamentos(response: Response, data: date | None = None, barbeiro_id: int | None = None, servico_id: int | None = None, status_filtro: str | None = Query(None, alias="status"), busca: str | None = None, pagina: int = Query(1, ge=1), por_pagina: int = Query(20, ge=1, le=100), ordenar: str = Query("data"), direcao: str = Query("asc"), db: Session = Depends(get_db)):
     q = db.query(Agendamento).outerjoin(Cliente)
     if data: q=q.filter(Agendamento.data==data)
     if barbeiro_id: q=q.filter(Agendamento.barbeiro_id==barbeiro_id)
     if servico_id: q=q.filter(Agendamento.servico_id==servico_id)
     if status_filtro: q=q.filter(Agendamento.status==status_filtro)
     if busca: q=q.filter(or_(Agendamento.cliente.ilike(f"%{busca}%"), Cliente.telefone.ilike(f"%{busca}%")))
-    return [{"id":a.id,"cliente":a.cliente,"telefone":_mascarar_telefone(a.cliente_relacionado.telefone if a.cliente_relacionado else None),"data":a.data,"horario":a.horario,"status":a.status,"barbeiro":a.barbeiro.nome,"servico":a.servico.nome,"preco":str(a.preco_no_agendamento),"duracao_minutos":a.servico.duracao_minutos} for a in q.order_by(Agendamento.data,Agendamento.horario).all()]
+    colunas = {"data": Agendamento.data, "horario": Agendamento.horario, "status": Agendamento.status, "cliente": Agendamento.cliente}
+    if ordenar not in colunas or direcao not in ("asc", "desc"):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "Ordenação inválida.")
+    total = q.count()
+    coluna = colunas[ordenar]
+    ordem = coluna.desc() if direcao == "desc" else coluna.asc()
+    itens = q.order_by(ordem, Agendamento.horario, Agendamento.id).offset((pagina - 1) * por_pagina).limit(por_pagina).all()
+    response.headers["X-Total-Count"] = str(total)
+    response.headers["X-Page"] = str(pagina)
+    response.headers["X-Page-Size"] = str(por_pagina)
+    return [{"id":a.id,"cliente_id":a.cliente_id,"cliente":a.cliente,"telefone":_mascarar_telefone(a.cliente_relacionado.telefone if a.cliente_relacionado else None),"data":a.data,"horario":a.horario,"status":a.status,"barbeiro":a.barbeiro.nome,"servico":a.servico.nome,"preco":str(a.preco_no_agendamento),"duracao_minutos":a.servico.duracao_minutos} for a in itens]
+
+
+@router.get("/clientes")
+def buscar_clientes(busca: str = Query(min_length=2, max_length=100), db: Session = Depends(get_db)):
+    termo = f"%{busca.strip()}%"
+    clientes = db.query(Cliente).filter(or_(Cliente.nome.ilike(termo), Cliente.telefone.ilike(termo))).order_by(Cliente.nome).limit(20).all()
+    return [{"id": cliente.id, "nome": cliente.nome, "telefone": _mascarar_telefone(cliente.telefone)} for cliente in clientes]
+
+
+@router.put("/agendamentos/{agendamento_id}/cliente")
+def vincular_cliente(agendamento_id: int, dados: VincularClienteEntrada, db: Session = Depends(get_db)):
+    agendamento = db.get(Agendamento, agendamento_id)
+    if not agendamento:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Agendamento não encontrado.")
+    if agendamento.cliente_id is not None:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Este agendamento já está vinculado a um cliente.")
+    cliente = db.get(Cliente, dados.cliente_id)
+    if not cliente:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Cliente não encontrado.")
+    agendamento.cliente_id = cliente.id
+    agendamento.cliente = cliente.nome
+    db.commit()
+    return {"id": agendamento.id, "cliente_id": cliente.id, "cliente": cliente.nome, "telefone": _mascarar_telefone(cliente.telefone)}
 
 
 @router.patch("/agendamentos/{agendamento_id}/status")
