@@ -4,7 +4,7 @@ from datetime import date, time
 
 class AgendamentoEntrada(BaseModel):
 
-    client: str
+    cliente: str
     barbeiro: str
     data: date
     horario: time
