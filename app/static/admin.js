@@ -83,7 +83,9 @@ async function telaServicos(editId) {
 
 function formularioBarbeiro(item = {}) {
   const ids = new Set((item.servicos || []).map(servico => servico.id));
-  return `<form id="barber-form" class="inline-form" data-id="${item.id || ''}"><input id="bn" placeholder="Nome" value="${h(item.nome)}" required><input id="bd" placeholder="Descrição" value="${h(item.descricao)}"><label>Serviços<select id="bs" multiple size="${Math.min(Math.max(servicos.length, 2), 6)}">${servicos.map(servico => `<option value="${servico.id}" ${ids.has(servico.id) ? 'selected' : ''}>${h(servico.nome)}</option>`).join('')}</select></label><button>${item.id ? 'Atualizar' : 'Cadastrar'}</button>${item.id ? '<button type="button" class="secondary-button" data-cancel-edit>Cancelar</button>' : ''}</form>`;
+  const quantidade = ids.size;
+  const resumo = quantidade ? `${quantidade} serviço${quantidade > 1 ? 's' : ''} selecionado${quantidade > 1 ? 's' : ''}` : 'Selecionar serviços';
+  return `<form id="barber-form" class="inline-form" data-id="${item.id || ''}"><input id="bn" placeholder="Nome" value="${h(item.nome)}" required><input id="bd" placeholder="Descrição" value="${h(item.descricao)}"><label class="service-picker-label">Serviços<details class="service-picker"><summary><span data-service-summary>${resumo}</span><span class="picker-chevron" aria-hidden="true">⌄</span></summary><div class="service-options">${servicos.map(servico => `<label class="service-option"><input type="checkbox" value="${servico.id}" data-service-option ${ids.has(servico.id) ? 'checked' : ''}><span>${h(servico.nome)}</span></label>`).join('') || '<p class="service-empty">Nenhum serviço cadastrado.</p>'}</div></details></label><button>${item.id ? 'Atualizar' : 'Cadastrar'}</button>${item.id ? '<button type="button" class="secondary-button" data-cancel-edit>Cancelar</button>' : ''}</form>`;
 }
 
 async function telaBarbeiros(editId) {
@@ -106,6 +108,12 @@ document.querySelector('.admin-nav').addEventListener('click', event => {
 });
 
 content.addEventListener('change', event => {
+  if (event.target.matches('[data-service-option]')) {
+    const picker = event.target.closest('.service-picker');
+    const quantidade = picker.querySelectorAll('[data-service-option]:checked').length;
+    picker.querySelector('[data-service-summary]').textContent = quantidade ? `${quantidade} serviço${quantidade > 1 ? 's' : ''} selecionado${quantidade > 1 ? 's' : ''}` : 'Selecionar serviços';
+    return;
+  }
   if (!event.target.dataset.status) return;
   executar(() => api(`/api/admin/agendamentos/${event.target.dataset.status}/status`, requestJson('PATCH', {status: event.target.value})), 'Status atualizado.');
 });
@@ -160,7 +168,7 @@ content.addEventListener('submit', event => {
     await telaServicos();
   }, 'Serviço salvo.');
   if (event.target.id === 'barber-form') executar(async () => {
-    const servicoIds = [...document.querySelector('#bs').selectedOptions].map(option => Number(option.value));
+    const servicoIds = [...event.target.querySelectorAll('[data-service-option]:checked')].map(option => Number(option.value));
     const data = {nome: document.querySelector('#bn').value, descricao: document.querySelector('#bd').value || null, servico_ids: servicoIds};
     const id = event.target.dataset.id;
     if (id) {
