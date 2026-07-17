@@ -12,4 +12,4 @@ COPY . .
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && fastapi run app/main.py --port 8000"]
+CMD ["sh", "-c", "alembic upgrade head && python scripts/create_master.py && fastapi run app/main.py --port 8000"]
