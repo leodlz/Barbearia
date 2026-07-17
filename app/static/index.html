@@ -17,6 +17,7 @@
       </section>
 
       <section class="booking-card" aria-labelledby="booking-title">
+        <button id="logout" type="button" class="link-button">Sair</button>
         <div class="card-heading">
           <span>01</span>
           <div>
@@ -51,16 +52,16 @@
               <select id="horario" required disabled>
                 <option value="">Escolha uma data primeiro</option>
               </select>
+              <div id="time-grid" class="time-grid" aria-label="Horários disponíveis"></div>
             </label>
           </div>
 
           <label class="full-field">
             Seu nome
-            <input id="cliente" type="text" minlength="2" maxlength="100"
-                   placeholder="Como devemos chamar você?" required>
+            <input id="cliente" type="text" readonly>
           </label>
 
-          <button type="submit">Confirmar agendamento</button>
+          <button type="submit" disabled>Revisar agendamento</button>
           <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
         </form>
       </section>

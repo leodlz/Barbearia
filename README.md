@@ -136,6 +136,29 @@ Revise sempre o arquivo gerado antes de aplicar a migração.
 
 ## Configuração e implantação
 
+### Acesso do cliente e lembretes
+
+O cliente entra em `/acesso` com nome, telefone e CPF e segue para `/agendar`.
+Essa identificação não substitui autenticação forte; alguém que conheça CPF e
+telefone ainda pode se passar pelo titular. O cookie assinado guarda somente o
+`cliente_id`. OTP por telefone é a evolução recomendada.
+
+As rotas administrativas de agendamentos exigem o cabeçalho `X-Admin-Key`,
+comparado com `ADMIN_API_KEY`. Essa chave não deve ser incluída no JavaScript.
+
+Copie `.env.example` para configurar a sessão e o envio. Por padrão, lembretes
+são simulados. Para envio real, defina `NOTIFICACAO_PROVEDOR=twilio`, escolha
+`NOTIFICACAO_CANAL=sms` ou `whatsapp` e configure as credenciais Twilio. Execute
+o worker em processo separado:
+
+```powershell
+python -m app.workers.lembretes
+```
+
+O worker procura lembretes vencidos a cada 30 segundos, evita reenvio após
+sucesso e ignora agendamentos cancelados. CPF nunca é enviado nem registrado
+nas notificações.
+
 Por padrão, a aplicação usa:
 
 ```text

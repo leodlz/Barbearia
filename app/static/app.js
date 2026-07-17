@@ -6,8 +6,19 @@ const horarioSelect = document.querySelector("#horario");
 const clienteInput = document.querySelector("#cliente");
 const feedback = document.querySelector("#feedback");
 const submitButton = form.querySelector("button");
+const timeGrid = document.querySelector('#time-grid');
 
 let barbeiros = [];
+
+async function carregarCliente() {
+  const response = await fetch('/api/clientes/me');
+  if (!response.ok) { location.href = '/acesso'; return; }
+  const cliente = await response.json();
+  clienteInput.value = cliente.nome;
+}
+document.querySelector('#logout').addEventListener('click', async () => {
+  await fetch('/api/clientes/logout', {method: 'POST'}); location.href='/acesso';
+});
 
 const hoje = new Date();
 const hojeLocal = new Date(hoje.getTime() - hoje.getTimezoneOffset() * 60000);
@@ -64,6 +75,8 @@ barbeiroSelect.addEventListener("change", () => {
 });
 
 dataInput.addEventListener("change", async () => {
+  submitButton.disabled = true;
+  timeGrid.innerHTML = '';
   horarioSelect.disabled = true;
   preencherSelect(horarioSelect, [], "Consultando horários…", String);
   if (!dataInput.value) return;
@@ -83,6 +96,12 @@ dataInput.addEventListener("change", async () => {
       (horario) => horario.slice(0, 5)
     );
     horarioSelect.disabled = disponibilidade.horarios.length === 0;
+    timeGrid.innerHTML = '';
+    disponibilidade.horarios.forEach((horario) => {
+      const button=document.createElement('button'); button.type='button'; button.className='time-button'; button.textContent=horario.slice(0,5);
+      button.addEventListener('click',()=>{document.querySelectorAll('.time-button').forEach(item=>item.classList.remove('selected'));button.classList.add('selected');horarioSelect.value=horario;submitButton.disabled=false;});
+      timeGrid.appendChild(button);
+    });
   } catch (error) {
     mostrarFeedback(error.message, "error");
   }
@@ -90,15 +109,16 @@ dataInput.addEventListener("change", async () => {
 
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const dataBr = dataInput.value.split('-').reverse().join('/');
+  if (!window.confirm(`Confirme seu agendamento\n\nCliente: ${clienteInput.value}\nData: ${dataBr}\nHorário: ${horarioSelect.value.slice(0,5)}`)) return;
   submitButton.disabled = true;
   mostrarFeedback("Confirmando seu horário…");
 
   try {
-    const agendamento = await obterJson("/agendamentos", {
+    const agendamento = await obterJson("/api/clientes/agendamentos", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        cliente: clienteInput.value.trim(),
         barbeiro_id: Number(barbeiroSelect.value),
         servico_id: Number(servicoSelect.value),
         data: dataInput.value,
@@ -109,10 +129,10 @@ form.addEventListener("submit", async (event) => {
       `Agendamento #${agendamento.id} confirmado com ${agendamento.barbeiro.nome}.`,
       "success"
     );
-    clienteInput.value = "";
     dataInput.dispatchEvent(new Event("change"));
   } catch (error) {
     mostrarFeedback(error.message, "error");
+    if (error.message.includes('acabou de ser reservado')) dataInput.dispatchEvent(new Event('change'));
   } finally {
     submitButton.disabled = false;
   }
@@ -124,3 +144,4 @@ function mostrarFeedback(mensagem, tipo = "") {
 }
 
 carregarCatalogo();
+carregarCliente();
