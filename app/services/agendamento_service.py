@@ -33,7 +33,7 @@ def criar_agendamento(
     _validar_horario_futuro(dados.data, dados.horario)
     barbeiro = obter_barbeiro(db, dados.barbeiro_id)
     servico = obter_servico(db, dados.servico_id)
-    _validar_catalogo(barbeiro, servico)
+    validar_catalogo(barbeiro, servico)
     _validar_conflito(db, dados, servico)
 
     agendamento = Agendamento(
@@ -107,7 +107,7 @@ def _validar_conflito(
         )
 
 
-def _validar_catalogo(barbeiro: Barbeiro, servico: Servico) -> None:
+def validar_catalogo(barbeiro: Barbeiro, servico: Servico) -> None:
     if not barbeiro.ativo:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
