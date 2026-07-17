@@ -16,6 +16,8 @@ class Agendamento(Base):
 
     servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
 
+    cliente_id = Column(Integer, ForeignKey("clientes.id"), nullable=True)
+
     data = Column(Date, nullable=False)
 
     horario = Column(Time, nullable=False)
@@ -25,3 +27,7 @@ class Agendamento(Base):
     barbeiro = relationship("Barbeiro", lazy="joined")
 
     servico = relationship("Servico", lazy="joined")
+
+    cliente_relacionado = relationship("Cliente", back_populates="agendamentos")
+
+    notificacao = relationship("Notificacao", back_populates="agendamento", uselist=False)

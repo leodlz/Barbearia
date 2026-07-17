@@ -29,6 +29,7 @@ def obter_agendamento(db: Session, agendamento_id: int) -> Agendamento:
 def criar_agendamento(
     db: Session,
     dados: AgendamentoEntrada,
+    cliente_id: int | None = None,
 ) -> Agendamento:
     _validar_horario_futuro(dados.data, dados.horario)
     barbeiro = obter_barbeiro(db, dados.barbeiro_id)
@@ -42,6 +43,7 @@ def criar_agendamento(
         servico_id=dados.servico_id,
         data=dados.data,
         horario=dados.horario,
+        cliente_id=cliente_id,
     )
     db.add(agendamento)
     _salvar(db, agendamento)
@@ -103,7 +105,7 @@ def _validar_conflito(
     if conflito:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Este barbeiro já possui um agendamento nesse intervalo.",
+            detail="Este horário acabou de ser reservado. Escolha outro horário.",
         )
 
 

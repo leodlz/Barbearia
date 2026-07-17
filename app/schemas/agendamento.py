@@ -24,6 +24,13 @@ class AgendamentoEntrada(BaseModel):
     horario: time
 
 
+class AgendamentoClienteEntrada(BaseModel):
+    barbeiro_id: int = Field(gt=0)
+    servico_id: int = Field(gt=0)
+    data: date
+    horario: time
+
+
 class AgendamentoSaida(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
