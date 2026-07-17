@@ -13,6 +13,7 @@ class Cliente(Base):
     nome = Column(String(100), nullable=False)
     telefone = Column(String(11), nullable=False, index=True)
     cpf = Column(String(11), nullable=False, unique=True)
+    senha_hash = Column(String, nullable=True)
     criado_em = Column(DateTime, nullable=False, default=datetime.now)
     atualizado_em = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
 

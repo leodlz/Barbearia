@@ -26,11 +26,12 @@ def normalizar_telefone(valor: str) -> str:
     return telefone
 
 
-class ClienteAcesso(BaseModel):
+class ClienteRegistro(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
     nome: str = Field(min_length=3, max_length=100)
     telefone: str
     cpf: str
+    senha: str = Field(min_length=8, max_length=128)
 
     @field_validator("telefone")
     @classmethod
@@ -48,3 +49,13 @@ class ClienteSaida(BaseModel):
     id: int
     nome: str
     telefone: str
+
+
+class ClienteLogin(BaseModel):
+    cpf: str
+    senha: str = Field(min_length=1, max_length=128)
+
+    @field_validator("cpf")
+    @classmethod
+    def validar_cpf(cls, valor: str) -> str:
+        return normalizar_cpf(valor)

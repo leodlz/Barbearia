@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from app.database.connection import get_db
 from app.models.cliente import Cliente
 from app.schemas.agendamento import AgendamentoClienteEntrada, AgendamentoEntrada, AgendamentoSaida
-from app.schemas.cliente import ClienteAcesso, ClienteSaida
+from app.schemas.cliente import ClienteLogin, ClienteRegistro, ClienteSaida
 from app.services import agendamento_service, cliente_service, notificacao_service
 
 router = APIRouter(tags=["Clientes"])
@@ -29,9 +29,15 @@ def agendar(request: Request):
         return FileResponse(STATIC / "acesso.html", status_code=401)
     return FileResponse(STATIC / "index.html")
 
-@router.post("/api/clientes/acesso", response_model=ClienteSaida)
-def entrar(dados: ClienteAcesso, request: Request, db: Session = Depends(get_db)):
-    cliente = cliente_service.identificar_cliente(db, dados)
+@router.post("/api/clientes/registro", response_model=ClienteSaida, status_code=201)
+def registrar(dados: ClienteRegistro, request: Request, db: Session = Depends(get_db)):
+    cliente = cliente_service.registrar_cliente(db, dados)
+    request.session.clear(); request.session["cliente_id"] = cliente.id
+    return cliente
+
+@router.post("/api/clientes/login", response_model=ClienteSaida)
+def entrar(dados: ClienteLogin, request: Request, db: Session = Depends(get_db)):
+    cliente = cliente_service.autenticar_cliente(db, dados)
     request.session.clear(); request.session["cliente_id"] = cliente.id
     return cliente
 

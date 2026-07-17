@@ -138,10 +138,10 @@ Revise sempre o arquivo gerado antes de aplicar a migração.
 
 ### Acesso do cliente e lembretes
 
-O cliente entra em `/acesso` com nome, telefone e CPF e segue para `/agendar`.
-Essa identificação não substitui autenticação forte; alguém que conheça CPF e
-telefone ainda pode se passar pelo titular. O cookie assinado guarda somente o
-`cliente_id`. OTP por telefone é a evolução recomendada.
+O cliente registra nome, telefone, CPF e senha em `/acesso`. Nos próximos
+acessos, usa CPF e senha. A senha é armazenada como hash `scrypt` com salt; o
+cookie assinado guarda somente o `cliente_id`. Recuperação de senha e OTP por
+telefone são evoluções recomendadas.
 
 As rotas administrativas de agendamentos exigem o cabeçalho `X-Admin-Key`,
 comparado com `ADMIN_API_KEY`. Essa chave não deve ser incluída no JavaScript.
