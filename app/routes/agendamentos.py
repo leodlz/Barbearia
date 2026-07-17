@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
-from app.models.agendamento import Agendamento
 from app.schemas.agendamento import AgendamentoEntrada, AgendamentoSaida
+from app.services import agendamento_service
 
 
 router = APIRouter()
@@ -12,36 +12,57 @@ router = APIRouter()
 def listar_agendamentos(
     db: Session = Depends(get_db),
 ):
-    agendamentos = db.query(Agendamento).all()
-    return agendamentos
+    return agendamento_service.listar_agendamentos(db)
 
-@router.post("/agendamentos", response_model=AgendamentoSaida)
+
+@router.get("/agendamentos/{agendamento_id}", response_model=AgendamentoSaida)
+def buscar_agendamento(
+    agendamento_id: int,
+    db: Session = Depends(get_db),
+):
+    return agendamento_service.obter_agendamento(db, agendamento_id)
+
+
+@router.post(
+    "/agendamentos",
+    response_model=AgendamentoSaida,
+    status_code=status.HTTP_201_CREATED,
+)
 def criar_agendamento(
     agendamento: AgendamentoEntrada,
     db: Session = Depends(get_db),
 ):
-    conflito = db.query(Agendamento).filter(
-        Agendamento.barbeiro == agendamento.barbeiro,
-        Agendamento.data == agendamento.data,
-        Agendamento.horario == agendamento.horario,
-        Agendamento.status == "agendado",
-    ).first()
+    return agendamento_service.criar_agendamento(db, agendamento)
 
-    if conflito:
-        raise HTTPException(
-            status_code=409,
-            detail="Este barbeiro já possui um agendamento nesse horário.",
-        )
 
-    novo_agendamento = Agendamento(
-        cliente=agendamento.cliente,
-        barbeiro=agendamento.barbeiro,
-        data=agendamento.data,
-        horario=agendamento.horario,
-    )
+@router.patch(
+    "/agendamentos/{agendamento_id}/cancelar",
+    response_model=AgendamentoSaida,
+)
+def cancelar_agendamento(
+    agendamento_id: int,
+    db: Session = Depends(get_db),
+):
+    return agendamento_service.cancelar_agendamento(db, agendamento_id)
 
-    db.add(novo_agendamento)
-    db.commit()
-    db.refresh(novo_agendamento)
 
-    return novo_agendamento
+@router.patch(
+    "/agendamentos/{agendamento_id}/concluir",
+    response_model=AgendamentoSaida,
+)
+def concluir_agendamento(
+    agendamento_id: int,
+    db: Session = Depends(get_db),
+):
+    return agendamento_service.concluir_agendamento(db, agendamento_id)
+
+
+@router.patch(
+    "/agendamentos/{agendamento_id}/falta",
+    response_model=AgendamentoSaida,
+)
+def registrar_falta(
+    agendamento_id: int,
+    db: Session = Depends(get_db),
+):
+    return agendamento_service.registrar_falta(db, agendamento_id)
