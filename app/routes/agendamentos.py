@@ -3,19 +3,19 @@ from sqlalchemy.orm import Session
 
 from app.database.connection import get_db
 from app.models.agendamento import Agendamento
-from app.schemas.agendamento import AgendamentoEntrada
+from app.schemas.agendamento import AgendamentoEntrada, AgendamentoSaida
 
 
 router = APIRouter()
 
-@router.get("/agendamentos")
+@router.get("/agendamentos", response_model=list[AgendamentoSaida])
 def listar_agendamentos(
     db: Session = Depends(get_db),
 ):
     agendamentos = db.query(Agendamento).all()
     return agendamentos
 
-@router.post("/agendamentos")
+@router.post("/agendamentos", response_model=AgendamentoSaida)
 def criar_agendamento(
     agendamento: AgendamentoEntrada,
     db: Session = Depends(get_db),
