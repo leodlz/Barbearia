@@ -1,10 +1,6 @@
 from fastapi import FastAPI
+
 from app.routes.agendamentos import router
-from app.database.connection import Base, engine
-from app.models import agendamento
-
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
