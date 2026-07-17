@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Barbearia — Agendamento</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <main class="page-shell">
+      <section class="hero">
+        <p class="eyebrow">Agenda online</p>
+        <h1>Seu próximo corte, sem espera.</h1>
+        <p class="subtitle">
+          Escolha o serviço e encontre um horário disponível com seu barbeiro.
+        </p>
+      </section>
+
+      <section class="booking-card" aria-labelledby="booking-title">
+        <div class="card-heading">
+          <span>01</span>
+          <div>
+            <p class="eyebrow">Novo horário</p>
+            <h2 id="booking-title">Faça seu agendamento</h2>
+          </div>
+        </div>
+
+        <form id="booking-form">
+          <div class="field-grid">
+            <label>
+              Serviço
+              <select id="servico" required>
+                <option value="">Carregando serviços…</option>
+              </select>
+            </label>
+
+            <label>
+              Barbeiro
+              <select id="barbeiro" required disabled>
+                <option value="">Escolha um serviço primeiro</option>
+              </select>
+            </label>
+
+            <label>
+              Data
+              <input id="data" type="date" required disabled>
+            </label>
+
+            <label>
+              Horário
+              <select id="horario" required disabled>
+                <option value="">Escolha uma data primeiro</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="full-field">
+            Seu nome
+            <input id="cliente" type="text" minlength="2" maxlength="100"
+                   placeholder="Como devemos chamar você?" required>
+          </label>
+
+          <button type="submit">Confirmar agendamento</button>
+          <p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>
