@@ -13,6 +13,7 @@ from app.routes.barbeiros import router as barbeiros_router
 from app.routes.clientes import router as clientes_router
 from app.routes.disponibilidade import router as disponibilidade_router
 from app.routes.servicos import router as servicos_router
+from app.routes.notificacoes import router as notificacoes_router
 
 app = FastAPI(title="Gerenciador de Barbearia")
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "desenvolvimento-troque-em-producao"), max_age=3600, same_site="lax", https_only=os.getenv("SESSION_HTTPS_ONLY", "false").lower() == "true")
@@ -27,6 +28,7 @@ app.include_router(disponibilidade_router)
 app.include_router(clientes_router)
 app.include_router(admin_auth_router)
 app.include_router(admin_router)
+app.include_router(notificacoes_router)
 
 
 @app.get("/")

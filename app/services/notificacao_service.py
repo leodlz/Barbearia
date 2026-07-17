@@ -18,7 +18,7 @@ def processar_pendentes(db: Session) -> int:
     pendentes = db.query(Notificacao).filter(Notificacao.status == "pendente", Notificacao.enviar_em <= agora_local()).all()
     enviados = 0
     for item in pendentes:
-        if item.agendamento.status != "agendado":
+        if item.agendamento.status not in ("agendado", "confirmado"):
             item.status = "cancelada"
             continue
         try:
@@ -44,5 +44,8 @@ def _enviar(item: Notificacao) -> str:
     if item.canal == "whatsapp":
         destino, origem = f"whatsapp:{destino}", f"whatsapp:{origem}"
     api = Client(os.environ["TWILIO_ACCOUNT_SID"], os.environ["TWILIO_AUTH_TOKEN"])
-    mensagem = api.messages.create(body=f"Olá, {cliente.nome}! Lembrete: seu agendamento com {item.agendamento.barbeiro.nome} é amanhã às {item.agendamento.horario.strftime('%H:%M')}.", from_=origem, to=destino)
+    parametros = {"body": f"Olá, {cliente.nome}! Lembrete: seu agendamento com {item.agendamento.barbeiro.nome} é amanhã às {item.agendamento.horario.strftime('%H:%M')}.", "from_": origem, "to": destino}
+    if os.getenv("TWILIO_STATUS_CALLBACK_URL"):
+        parametros["status_callback"] = os.environ["TWILIO_STATUS_CALLBACK_URL"]
+    mensagem = api.messages.create(**parametros)
     return mensagem.sid

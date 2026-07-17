@@ -18,6 +18,7 @@ from app.routes.barbeiros import router as barbeiros_router
 from app.routes.clientes import router as clientes_router
 from app.routes.disponibilidade import router as disponibilidade_router
 from app.routes.servicos import router as servicos_router
+from app.routes.notificacoes import router as notificacoes_router
 from app.models.usuario_master import UsuarioMaster
 from app.services.cliente_service import gerar_hash
 
@@ -59,6 +60,7 @@ def client(session_factory: sessionmaker[Session]) -> Generator[TestClient, None
     app.include_router(clientes_router)
     app.include_router(admin_auth_router)
     app.include_router(admin_router)
+    app.include_router(notificacoes_router)
     app.dependency_overrides[get_db] = override_get_db
 
     os.environ["ADMIN_API_KEY"] = "teste-admin"

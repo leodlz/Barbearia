@@ -173,8 +173,11 @@ python -m app.workers.lembretes
 ```
 
 O worker procura lembretes vencidos a cada 30 segundos, evita reenvio após
-sucesso e ignora agendamentos cancelados. CPF nunca é enviado nem registrado
-nas notificações.
+sucesso e ignora agendamentos cancelados. Agendamentos confirmados continuam
+elegíveis. Para acompanhar entrega real, configure `TWILIO_STATUS_CALLBACK_URL`
+com a URL pública `/api/notificacoes/twilio/status` cadastrada no Twilio; o
+endpoint valida a assinatura do provedor antes de atualizar o status. CPF nunca
+é enviado nem registrado nas notificações.
 
 Por padrão, a aplicação usa:
 
