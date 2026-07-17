@@ -3,6 +3,9 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.barbeiro import BarbeiroResumo
+from app.schemas.servico import ServicoSaida
+
 
 class StatusAgendamento(str, Enum):
     AGENDADO = "agendado"
@@ -13,7 +16,8 @@ class StatusAgendamento(str, Enum):
 
 class AgendamentoEntrada(BaseModel):
     cliente: str
-    barbeiro: str
+    barbeiro_id: int
+    servico_id: int
     data: date
     horario: time
 
@@ -23,8 +27,11 @@ class AgendamentoSaida(BaseModel):
 
     id: int
     cliente: str
-    barbeiro: str
+    barbeiro_id: int
+    servico_id: int
     data: date
     horario: time
     status: StatusAgendamento
+    barbeiro: BarbeiroResumo
+    servico: ServicoSaida
 

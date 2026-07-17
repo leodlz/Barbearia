@@ -1,5 +1,7 @@
+from sqlalchemy import Column, Date, ForeignKey, Integer, String, Time
+from sqlalchemy.orm import relationship
+
 from app.database.connection import Base
-from sqlalchemy import Column, Integer, String, Time, Date
 
 
 class Agendamento(Base):
@@ -10,10 +12,16 @@ class Agendamento(Base):
 
     cliente = Column(String, nullable=False)
 
-    barbeiro = Column(String, nullable=False)
+    barbeiro_id = Column(Integer, ForeignKey("barbeiros.id"), nullable=False)
+
+    servico_id = Column(Integer, ForeignKey("servicos.id"), nullable=False)
 
     data = Column(Date, nullable=False)
 
     horario = Column(Time, nullable=False)
 
     status = Column(String, nullable=False, default="agendado")
+
+    barbeiro = relationship("Barbeiro", lazy="joined")
+
+    servico = relationship("Servico", lazy="joined")

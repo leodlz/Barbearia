@@ -1,11 +1,15 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models.agendamento import Agendamento
+from app.models.barbeiro import Barbeiro
+from app.models.servico import Servico
 from app.schemas.agendamento import AgendamentoEntrada, StatusAgendamento
+from app.services.barbeiro_service import obter_barbeiro
+from app.services.servico_service import obter_servico
 
 
 def listar_agendamentos(db: Session) -> list[Agendamento]:
@@ -27,11 +31,15 @@ def criar_agendamento(
     dados: AgendamentoEntrada,
 ) -> Agendamento:
     _validar_horario_futuro(dados.data, dados.horario)
-    _validar_conflito(db, dados)
+    barbeiro = obter_barbeiro(db, dados.barbeiro_id)
+    servico = obter_servico(db, dados.servico_id)
+    _validar_catalogo(barbeiro, servico)
+    _validar_conflito(db, dados, servico)
 
     agendamento = Agendamento(
         cliente=dados.cliente,
-        barbeiro=dados.barbeiro,
+        barbeiro_id=dados.barbeiro_id,
+        servico_id=dados.servico_id,
         data=dados.data,
         horario=dados.horario,
     )
@@ -70,18 +78,50 @@ def registrar_falta(db: Session, agendamento_id: int) -> Agendamento:
     return agendamento
 
 
-def _validar_conflito(db: Session, dados: AgendamentoEntrada) -> None:
-    conflito = db.query(Agendamento).filter(
-        Agendamento.barbeiro == dados.barbeiro,
+def _validar_conflito(
+    db: Session,
+    dados: AgendamentoEntrada,
+    servico: Servico,
+) -> None:
+    agendamentos_ativos = db.query(Agendamento).filter(
+        Agendamento.barbeiro_id == dados.barbeiro_id,
         Agendamento.data == dados.data,
-        Agendamento.horario == dados.horario,
         Agendamento.status == StatusAgendamento.AGENDADO.value,
-    ).first()
+    ).all()
+
+    novo_inicio = datetime.combine(dados.data, dados.horario)
+    novo_fim = novo_inicio + timedelta(minutes=servico.duracao_minutos)
+
+    conflito = any(
+        novo_inicio
+        < datetime.combine(existente.data, existente.horario)
+        + timedelta(minutes=existente.servico.duracao_minutos)
+        and novo_fim > datetime.combine(existente.data, existente.horario)
+        for existente in agendamentos_ativos
+    )
 
     if conflito:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Este barbeiro já possui um agendamento nesse horário.",
+            detail="Este barbeiro já possui um agendamento nesse intervalo.",
+        )
+
+
+def _validar_catalogo(barbeiro: Barbeiro, servico: Servico) -> None:
+    if not barbeiro.ativo:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="O barbeiro informado está inativo.",
+        )
+    if not servico.ativo:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="O serviço informado está inativo.",
+        )
+    if servico not in barbeiro.servicos:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="O barbeiro informado não realiza este serviço.",
         )
 
 

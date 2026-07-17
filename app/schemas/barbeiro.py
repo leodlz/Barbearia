@@ -10,10 +10,13 @@ class BarbeiroEntrada(BaseModel):
     ativo: bool = True
 
 
-class BarbeiroSaida(BaseModel):
+class BarbeiroResumo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
     nome: str
     ativo: bool
+
+
+class BarbeiroSaida(BarbeiroResumo):
     servicos: list[ServicoSaida] = Field(default_factory=list)
