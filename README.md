@@ -141,8 +141,12 @@ Revise sempre o arquivo gerado antes de aplicar a migração.
 
 O cliente registra nome, telefone, CPF e senha em `/acesso`. Nos próximos
 acessos, usa CPF e senha. A senha é armazenada como hash `scrypt` com salt; o
-cookie assinado guarda somente o `cliente_id`. Recuperação de senha e OTP por
-telefone são evoluções recomendadas.
+cookie assinado guarda somente o `cliente_id`.
+
+O link “Esqueci minha senha” envia um código de seis dígitos pelo canal de
+notificação configurado. O código é armazenado somente como hash, expira em 10
+minutos e é bloqueado após cinco erros. No provedor `simulado`, o código aparece
+na própria interface exclusivamente para desenvolvimento local.
 
 Clientes acessam o histórico em `/meus-agendamentos`; a API sempre usa o
 `cliente_id` da sessão e nunca aceita outro cliente como prova de propriedade.

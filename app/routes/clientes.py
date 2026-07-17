@@ -9,8 +9,8 @@ from app.dependencies.auth import require_cliente
 from app.models.cliente import Cliente
 from app.models.agendamento import Agendamento
 from app.schemas.agendamento import AgendamentoClienteEntrada, AgendamentoEntrada, AgendamentoSaida
-from app.schemas.cliente import ClienteLogin, ClienteRegistro, ClienteSaida
-from app.services import agendamento_service, cliente_service, notificacao_service
+from app.schemas.cliente import ClienteLogin, ClienteRegistro, ClienteSaida, RecuperacaoConfirmacao, RecuperacaoSolicitacao
+from app.services import agendamento_service, cliente_service, notificacao_service, recuperacao_service
 
 router = APIRouter(tags=["Clientes"])
 STATIC = Path(__file__).parents[1] / "static"
@@ -49,6 +49,17 @@ def me(request: Request, db: Session = Depends(get_db)):
 
 @router.post("/api/clientes/logout", status_code=204)
 def sair(request: Request): request.session.clear()
+
+@router.post("/api/clientes/recuperacao/solicitar")
+def solicitar_recuperacao(dados: RecuperacaoSolicitacao, db: Session = Depends(get_db)):
+    codigo_teste = recuperacao_service.solicitar(db, dados.cpf)
+    resposta = {"mensagem": "Se o CPF estiver cadastrado, o código será enviado."}
+    if codigo_teste is not None: resposta["codigo_teste"] = codigo_teste
+    return resposta
+
+@router.post("/api/clientes/recuperacao/confirmar", status_code=204)
+def confirmar_recuperacao(dados: RecuperacaoConfirmacao, db: Session = Depends(get_db)):
+    recuperacao_service.confirmar(db, dados)
 
 @router.post("/api/clientes/agendamentos", response_model=AgendamentoSaida, status_code=201)
 def criar(dados: AgendamentoClienteEntrada, cliente: Cliente = Depends(require_cliente), db: Session = Depends(get_db)):

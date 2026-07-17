@@ -56,3 +56,22 @@ def test_agendamento_exige_sessao_e_cria_lembrete(client: TestClient, session_fa
     assert client.post('/api/clientes/agendamentos',json=payload).status_code == 201
     with session_factory() as db:
         assert db.scalar(select(func.count()).select_from(Notificacao)) == 1
+
+
+def test_recupera_senha_com_codigo_temporario(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setenv('NOTIFICACAO_PROVEDOR', 'simulado')
+    client.post('/api/clientes/registro', json=DADOS)
+    client.post('/api/clientes/logout')
+    resposta = client.post('/api/clientes/recuperacao/solicitar', json={'cpf': DADOS['cpf']})
+    codigo = resposta.json()['codigo_teste']
+    assert client.post('/api/clientes/recuperacao/confirmar', json={'cpf': DADOS['cpf'], 'codigo': '000000', 'nova_senha': 'senha-nova-segura', 'confirmar_nova_senha': 'senha-nova-segura'}).status_code == 400
+    assert client.post('/api/clientes/recuperacao/confirmar', json={'cpf': DADOS['cpf'], 'codigo': codigo, 'nova_senha': 'senha-nova-segura', 'confirmar_nova_senha': 'senha-nova-segura'}).status_code == 204
+    assert client.post('/api/clientes/login', json={'cpf': DADOS['cpf'], 'senha': DADOS['senha']}).status_code == 401
+    assert client.post('/api/clientes/login', json={'cpf': DADOS['cpf'], 'senha': 'senha-nova-segura'}).status_code == 200
+
+
+def test_recuperacao_nao_revela_cpf_inexistente(client: TestClient, monkeypatch) -> None:
+    monkeypatch.setenv('NOTIFICACAO_PROVEDOR', 'simulado')
+    resposta = client.post('/api/clientes/recuperacao/solicitar', json={'cpf': cpf_teste()})
+    assert resposta.status_code == 200
+    assert 'codigo_teste' not in resposta.json()

@@ -59,3 +59,18 @@ class ClienteLogin(BaseModel):
     @classmethod
     def validar_cpf(cls, valor: str) -> str:
         return normalizar_cpf(valor)
+
+
+class RecuperacaoSolicitacao(BaseModel):
+    cpf: str
+
+    @field_validator("cpf")
+    @classmethod
+    def validar_cpf(cls, valor: str) -> str:
+        return normalizar_cpf(valor)
+
+
+class RecuperacaoConfirmacao(RecuperacaoSolicitacao):
+    codigo: str = Field(pattern=r"^\d{6}$")
+    nova_senha: str = Field(min_length=8, max_length=128)
+    confirmar_nova_senha: str = Field(min_length=8, max_length=128)
