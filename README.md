@@ -143,8 +143,24 @@ acessos, usa CPF e senha. A senha é armazenada como hash `scrypt` com salt; o
 cookie assinado guarda somente o `cliente_id`. Recuperação de senha e OTP por
 telefone são evoluções recomendadas.
 
-As rotas administrativas de agendamentos exigem o cabeçalho `X-Admin-Key`,
-comparado com `ADMIN_API_KEY`. Essa chave não deve ser incluída no JavaScript.
+Clientes acessam o histórico em `/meus-agendamentos`; a API sempre usa o
+`cliente_id` da sessão e nunca aceita outro cliente como prova de propriedade.
+
+O painel master fica em `/admin/login`. Para criar o primeiro usuário, defina
+`MASTER_NAME`, `MASTER_USER` e `MASTER_PASSWORD` e execute:
+
+```powershell
+python scripts/create_master.py
+```
+
+O comando é idempotente: não recria o usuário nem sobrescreve sua senha. Rotas
+administrativas validam a sessão master no backend; sessões de clientes recebem
+`403` e visitantes sem sessão recebem `401`.
+
+Agendamentos guardam `preco_no_agendamento`. Portanto, alterar o preço atual de
+um serviço não modifica valores históricos. Serviços e barbeiros são
+desativados, não apagados; compromissos futuros são preservados e apresentados
+ao master para revisão manual.
 
 Copie `.env.example` para configurar a sessão e o envio. Por padrão, lembretes
 são simulados. Para envio real, defina `NOTIFICACAO_PROVEDOR=twilio`, escolha
