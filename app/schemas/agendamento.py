@@ -1,7 +1,7 @@
 from datetime import date, time
 from enum import Enum
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.barbeiro import BarbeiroResumo
 from app.schemas.servico import ServicoSaida
@@ -15,9 +15,11 @@ class StatusAgendamento(str, Enum):
 
 
 class AgendamentoEntrada(BaseModel):
-    cliente: str
-    barbeiro_id: int
-    servico_id: int
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    cliente: str = Field(min_length=2, max_length=100)
+    barbeiro_id: int = Field(gt=0)
+    servico_id: int = Field(gt=0)
     data: date
     horario: time
 

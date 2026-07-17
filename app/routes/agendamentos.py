@@ -6,7 +6,7 @@ from app.schemas.agendamento import AgendamentoEntrada, AgendamentoSaida
 from app.services import agendamento_service
 
 
-router = APIRouter()
+router = APIRouter(tags=["Agendamentos"])
 
 @router.get("/agendamentos", response_model=list[AgendamentoSaida])
 def listar_agendamentos(

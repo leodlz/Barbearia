@@ -3,11 +3,12 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.database.connection import Base
+from app.database.connection import Base, DATABASE_URL
 from app import models  # noqa: F401
 
 
 config = context.config
+config.set_main_option("sqlalchemy.url", DATABASE_URL.replace("%", "%%"))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
